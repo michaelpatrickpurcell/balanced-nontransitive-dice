@@ -13,15 +13,15 @@ def natural_faces(d, *args):
     ret = [[all_faces[args[i][j]] for j in range(d)] for i in range(n)]
     return ret
 
-def collapse_values(dice):
+def collapse_values(*args):
     T = {}
-    for i, die in enumerate(dice):
+    for i, die in enumerate(args):
         T.update({k: i for k in die})
     n = len(T.keys())
     T_list = [T[i] for i in range(n)]
     current_value = 0
     current_die = T_list[0]
-    collapsed_dice = [[] for _ in dice]
+    collapsed_dice = [[] for _ in args]
     collapsed_dice[current_die].append(current_value)
     for i in range(1, n):
         previous_die = current_die

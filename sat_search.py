@@ -459,7 +459,7 @@ lower_bounds, upper_bounds = update_bounds(
 E_raw = find_faces(lower_bounds, upper_bounds)
 
 A_nat, B_nat, C_nat, D_nat, E_nat = natural_faces(d, A_raw, B_raw, C_raw, D_raw, E_raw)
-A, B, C, D, E = collapse_values([A_nat, B_nat, C_nat, D_nat, E_nat])
+A, B, C, D, E = collapse_values(A_nat, B_nat, C_nat, D_nat, E_nat)
 
 print(compare_dice(A, B))
 print(compare_dice(B, C))
