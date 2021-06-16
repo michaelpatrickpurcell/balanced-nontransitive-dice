@@ -6,10 +6,12 @@ def compare_dice(first, second):
                 hits += 1
     return hits
 
-def natural_faces(d, *args):
+def naturalize_values(*args):
     temp = sum(args, [])
+    m = len(temp)
     n = len(args)
-    all_faces = dict(zip(sorted(temp), range(len(temp))))
+    d = m // n
+    all_faces = dict(zip(sorted(temp), range(m)))
     ret = [[all_faces[args[i][j]] for j in range(d)] for i in range(n)]
     return ret
 
