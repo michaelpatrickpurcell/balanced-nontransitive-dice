@@ -202,12 +202,12 @@ while is_solvable:
 # =============================================================================
 # Five dice sets
 # =============================================================================
-d = 3
-adj_score = 5
-acr_score = 4
-# d = 6
-# adj_score = 24
-# acr_score = 16
+# d = 3
+# adj_score = 5
+# acr_score = 4
+d = 6
+adj_score = 24
+acr_score = 16
 
 scores = [adj_score] * 5 + [acr_score] * 5
 
