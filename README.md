@@ -15,7 +15,7 @@ Notice that:
   - P{A > B} = P{B > C} = P{C > D} = P{D > E} = P{E > A} = 2/3
   - P{A > C} = P{C > E} = P{E > B} = P{B > D} = P{D > A} = 5/9
 
-So, we have two balanced cycles with different biases. Furthermore the biases related in such a way that each die is:
+So, we have two balanced cycles with different biases. Furthermore the biases are related in such a way that each die is:
   - very strong against one die with P{X > X+1} = 6/9.
   - moderately strong against one die with P{X > X+2} = 5/9.
   - moderately weak against one die with P{X > X+3} = 4/9.
