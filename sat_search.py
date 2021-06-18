@@ -10,41 +10,52 @@ from utils import compare_dice, collapse_values, naturalize_values
 # =============================================================================
 
 
-def build_clauses(d, var_names, scores):
-    face_names = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in var_names}
-    var_pairs = list(permutations(var_names, 2))
-    var_lists = [list(product(face_names[x], face_names[y])) for x, y in var_pairs]
-    var_dict = dict((v, k) for k, v in enumerate(sum(var_lists, []), 1))
+def build_clauses(d, dice_names, scores):
+    """
+    Build the clauses that describe the SAT problem.
+    """
+    dice_pairs = list(permutations(dice_names, 2))
+    n = len(dice_pairs)
+    f = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
+    var_lists = {(x, y): list(product(f[x], f[y])) for (x, y) in dice_pairs}
+
+    variables = sum(var_lists.values(), [])
+    var_dict = dict((v, k) for k, v in enumerate(variables, 1))
+
+    vpool = pysat.formula.IDPool(start_from=n * d ** 2 + 1)
 
     clauses = []
     clauses += build_cardinality_clauses(d, var_dict, var_lists, scores, vpool)
-    clauses += build_sorting_clauses(d, var_dict, var_pairs)
-    clauses += build_transitivity_clauses(d, var_dict, var_names)
-    clauses += build_converse_clauses(d, var_dict, var_pairs, vpool)
-    clauses += build_symmetry_clauses(d, var_dict, var_names)
+    clauses += build_converse_clauses(d, var_dict, dice_names, vpool)
+    clauses += build_sorting_clauses(d, var_dict, dice_names)
+    clauses += build_transitivity_clauses(d, var_dict, dice_names)
+    clauses += build_symmetry_clauses(d, var_dict, dice_names)
     return clauses
 
 
 def build_cardinality_clauses(d, var_dict, var_lists, scores, vpool):
     """
-    These clauses ensure that each pair of dice have the relationship
-    as described by the scores.
+    These clauses ensure that each pair of dice have the specified relationship.
     """
+    dice_pairs = var_lists.keys()
     cardinality_clauses = []
-    for var_list, score in zip(var_lists, scores):
+    for dice_pair in dice_pairs:
+        var_list = var_lists[dice_pair]
+        score = scores[dice_pair]
         lits = [var_dict[v] for v in var_list]
         cnf = PBEnc.equals(lits=lits, bound=score, vpool=vpool, encoding=0)
         cardinality_clauses += cnf.clauses
     return cardinality_clauses
 
 
-def build_horizontal_sorting_clauses(d, var_dict, var_pairs):
+def build_horizontal_sorting_clauses(d, var_dict, dice_names):
     """
     These clauses caputure the implications:
-    if (Xi > Yj) then (Xi > Yk) for k <= j
+        if (Xi > Yj) then (Xi > Yk) for k <= j
     """
     horizontal_sorting_clauses = []
-    for x, y in var_pairs:
+    dice_pairs = list(permutations(dice_names, 2))
+    for x, y in dice_pairs:
         for i in range(1, (d + 1)):
             for j in range(2, (d + 1)):
                 v1 = var_dict[(x + ("%i" % i), y + ("%i" % j))]
@@ -53,13 +64,14 @@ def build_horizontal_sorting_clauses(d, var_dict, var_pairs):
     return horizontal_sorting_clauses
 
 
-def build_vertical_sorting_clauses(d, var_dict, var_pairs):
+def build_vertical_sorting_clauses(d, var_dict, dice_names):
     """
-    These clauses capture the implications
-    if (Xi > Yj) then (Xk > Yj) for k >= i
+    These clauses capture the implications:
+        if (Xi > Yj) then (Xk > Yj) for k >= i
     """
     vertical_sorting_clauses = []
-    for x, y in var_pairs:
+    dice_pairs = list(permutations(dice_names, 2))
+    for x, y in dice_pairs:
         for i in range(1, d):
             for j in range(1, (d + 1)):
                 v1 = var_dict[(x + ("%i" % i), y + ("%i" % j))]
@@ -68,27 +80,26 @@ def build_vertical_sorting_clauses(d, var_dict, var_pairs):
     return vertical_sorting_clauses
 
 
-def build_sorting_clauses(d, var_dict, var_pairs):
+def build_sorting_clauses(d, var_dict, dice_names):
     """
-    These clauses ensure that each constraint matrix is lower triangular
+    These clauses ensure that each constraint matrix is lower triangular.
     """
     sorting_clauses = []
-    sorting_clauses += build_horizontal_sorting_clauses(d, var_dict, var_pairs)
-    sorting_clauses += build_vertical_sorting_clauses(d, var_dict, var_pairs)
+    sorting_clauses += build_horizontal_sorting_clauses(d, var_dict, dice_names)
+    sorting_clauses += build_vertical_sorting_clauses(d, var_dict, dice_names)
     return sorting_clauses
 
 
-def build_transitivity_clauses(d, var_dict, var_names):
+def build_transitivity_clauses(d, var_dict, dice_names):
     """
     These clauses caputure the implications
-    if (Xi > Yj) and (Yj > Zk) then (Xi > Zk)
+        if (Xi > Yj) and (Yj > Zk) then (Xi > Zk)
     and
-    if (Xi < Yj) and (Yj < Zk) then (Xi < Zk)
+        if (Xi < Yj) and (Yj < Zk) then (Xi < Zk)
     """
-    temp = var_names * 2
-    var_triplets = list(permutations(var_names, 3))
     transitivity_clauses = []
-    for x, y, z in var_triplets:
+    dice_triplets = list(permutations(dice_names, 3))
+    for x, y, z in dice_triplets:
         for i in range(1, (d + 1)):
             for j in range(1, (d + 1)):
                 for k in range(1, (d + 1)):
@@ -100,12 +111,14 @@ def build_transitivity_clauses(d, var_dict, var_names):
     return transitivity_clauses
 
 
-def build_converse_clauses(d, var_dict, var_pairs, vpool):
+def build_converse_clauses(d, var_dict, dice_names, vpool):
     """
-    These clauses capture the implication that if (A1 > C1), then ~(C1 > A1)
+    These clauses capture the implications:
+        if (A1 > C1), then ~(C1 > A1)
     """
     converse_clauses = []
-    for x, y in var_pairs:
+    dice_pairs = list(permutations(dice_names, 2))
+    for x, y in dice_pairs:
         for i in range(1, (d + 1)):
             for j in range(1, (d + 1)):
                 v1 = var_dict[(x + ("%i" % i), y + ("%i" % j))]
@@ -115,13 +128,13 @@ def build_converse_clauses(d, var_dict, var_pairs, vpool):
     return converse_clauses
 
 
-def build_symmetry_clauses(d, var_dict, var_names):
+def build_symmetry_clauses(d, var_dict, dice_names):
     """
     These clauses ensure that A1 is the smallest face.
     """
     symmetry_clauses = []
-    v0 = var_names[0]
-    for v in var_names[1:]:
+    v0 = dice_names[0]
+    for v in dice_names[1:]:
         for i in range(1, d + 1):
             symmetry_clauses.append([-var_dict[(v0 + "1", v + ("%i" % i))]])
             symmetry_clauses.append([var_dict[(v + ("%i" % i), v0 + "1")]])
@@ -129,6 +142,23 @@ def build_symmetry_clauses(d, var_dict, var_names):
 
 
 # ----------------------------------------------------------------------------
+
+
+def sat_to_dice(d, dice_names, sat_solution, compress=True):
+    dice_pairs = list(permutations(dice_names, 2))
+    n = len(dice_pairs)
+
+    signs_array = (sat_solution[: (n * d ** 2)] > 0).reshape((n, d, d))
+    constraints = {v: s for v, s in zip(dice_pairs, signs_array)}
+
+    raw_faces = recover_raw_values(d, dice_names, constraints)
+    natural_faces = naturalize_values(*raw_faces)
+    if compress:
+        dice_faces = collapse_values(*natural_faces)
+        dice_dict = {k: v for k, v in zip(dice_names, dice_faces)}
+    else:
+        dice_dict = {k: v for k, v in zip(dice_names, natural_faces)}
+    return dice_dict
 
 
 def recover_raw_values(d, var_names, constraints):
@@ -150,6 +180,9 @@ def recover_raw_values(d, var_names, constraints):
 
 
 def update_bounds(lower_bounds, upper_bounds, constraints, faces):
+    """
+    Derive bounds on possible values from the specified constraints.
+    """
     for i in range(d):
         if i > 0:
             lower_bounds[i] = max(lower_bounds[i], lower_bounds[i - 1])
@@ -176,87 +209,84 @@ def find_faces(lower_bounds, upper_bounds):
     return faces
 
 
+def verify_solution(scores, dice_solution):
+    for x, y in scores:
+        check = compare_dice(dice_solution[x], dice_solution[y])
+        print((x, y), check, scores[(x, y)])
+
+
 # =============================================================================
-# Three dice sets
+# Three-dice sets
 # =============================================================================
-d = 3
-score = 5
+dice_names = ["A", "B", "C"]
+m = len(dice_names)
+
+dice_pairs = list(permutations(dice_names, 2))
+n = len(dice_pairs)
+
+d = 18  # 34  # 31  # 13  # 3
+score = 198  # 714  # 589  # 104  # 5
 
 temp = [score, d ** 2 - score]
-scores = sum([[temp[(j - i) % 2] for j in range(2)] for i in range(3)], [])
-var_names = ["A", "B", "C"]
-vpool = pysat.formula.IDPool(start_from=len(scores) * d ** 2 + 1)
+S = [[temp[(j - i) % (m - 1)] for j in range(m - 1)] for i in range(m)]
+scores = {p: s for p, s in zip(dice_pairs, sum(S, []))}
 
 # ----------------------------------------------------------------------------
 
-clauses = build_clauses(d, var_names, scores)
+clauses = build_clauses(d, dice_names, scores)
 
-m = Minisat22()
+sat = Minisat22()
 for clause in clauses:
-    m.add_clause(clause)
+    sat.add_clause(clause)
 
-is_solvable = m.solve()
+is_solvable = sat.solve()
 print(is_solvable)
 if is_solvable:
-    res = np.array(m.get_model())
-    var_pairs = list(permutations(var_names, 2))
-    n = len(var_pairs)
-    signs = (res[: (n * d ** 2)] > 0).reshape((n, d, d))
-    constraints = {var_pair: sign for var_pair, sign in zip(var_pairs, signs)}
-
-    # ------------------------------------------------------------------------
-
-    raw_faces = recover_raw_values(d, var_names, constraints)
-    natural_faces = naturalize_values(*raw_faces)
-    collapsed_faces = collapse_values(*natural_faces)
-    A, B, C = collapsed_faces
-    dice_dict = {k: v for k, v in zip(var_names, collapsed_faces)}
-    for x, y in var_pairs:
-        print("%s: %i" % ((x, y), compare_dice(dice_dict[x], dice_dict[y])))
+    sat_solution = np.array(sat.get_model())
+    dice_solution = sat_to_dice(d, dice_names, sat_solution)
+    print(dice_solution)
 
 # =============================================================================
 # Four dice sets
 # =============================================================================
-d = 6  # 4
-adj_score = 22  # 10
-acr_score = 18  # 8
+dice_names = ["A", "B", "C", "D"]
+m = len(dice_names)
+
+dice_pairs = list(permutations(dice_names, 2))
+n = len(dice_pairs)
+
+d = 4  # 6
+adj_score = 10  # 22
+acr_score = 8  # 18
 
 temp = [adj_score, acr_score, d ** 2 - adj_score]
-scores = sum([[temp[(j - i) % 3] for j in range(3)] for i in range(4)], [])
-var_names = ["A", "B", "C", "D"]
-vpool = pysat.formula.IDPool(start_from=len(scores) * d ** 2 + 1)
+S = [[temp[(j - i) % (m - 1)] for j in range(m - 1)] for i in range(m)]
+scores = {p: s for p, s in zip(dice_pairs, sum(S, []))}
 
 # ----------------------------------------------------------------------------
 
-clauses = build_clauses(d, var_names, scores)
+clauses = build_clauses(d, dice_names, scores)
 
-m = Minisat22()
+sat = Minisat22()
 for clause in clauses:
-    m.add_clause(clause)
+    sat.add_clause(clause)
 
-is_solvable = m.solve()
+is_solvable = sat.solve()
 print(is_solvable)
 if is_solvable:
-    res = np.array(m.get_model())
-    var_pairs = list(permutations(var_names, 2))
-    n = len(var_pairs)
-    signs = (res[: (n * d ** 2)] > 0).reshape((n, d, d))
-    constraints = {var_pair: sign for var_pair, sign in zip(var_pairs, signs)}
-
-    # ------------------------------------------------------------------------
-
-    raw_faces = recover_raw_values(d, var_names, constraints)
-    natural_faces = naturalize_values(*raw_faces)
-    collapsed_faces = collapse_values(*natural_faces)
-    A, B, C, D = collapsed_faces
-    dice_dict = {k: v for k, v in zip(var_names, collapsed_faces)}
-    for x, y in var_pairs:
-        print("%s: %i" % ((x, y), compare_dice(dice_dict[x], dice_dict[y])))
-
+    sat_solution = np.array(sat.get_model())
+    dice_solution = sat_to_dice(d, dice_names, sat_solution)
+    print(dice_solution)
 
 # =============================================================================
 # Five dice sets
 # =============================================================================
+dice_names = ["A", "B", "C", "D", "E"]
+m = len(dice_names)
+
+dice_pairs = list(permutations(dice_names, 2))
+n = len(dice_pairs)
+
 # d = 3
 # adj_score = 5
 # acr_score = 4
@@ -265,36 +295,23 @@ adj_score = 24
 acr_score = 16
 
 temp = [adj_score, d ** 2 - acr_score, acr_score, d ** 2 - adj_score]
-scores = sum([[temp[(j - i) % 4] for j in range(4)] for i in range(5)], [])
-var_names = ["A", "B", "C", "D", "E"]
-vpool = pysat.formula.IDPool(start_from=len(scores) * d ** 2 + 1)
+S = [[temp[(j - i) % (m - 1)] for j in range(m - 1)] for i in range(m)]
+scores = {p: s for p, s in zip(dice_pairs, sum(S, []))}
 
 # ----------------------------------------------------------------------------
 
-clauses = build_clauses(d, var_names, scores)
+clauses = build_clauses(d, dice_names, scores)
 
-m = Minisat22()
+sat = Minisat22()
 for clause in clauses:
-    m.add_clause(clause)
+    sat.add_clause(clause)
 
-is_solvable = m.solve()
+is_solvable = sat.solve()
 print(is_solvable)
 if is_solvable:
-    res = np.array(m.get_model())
-    var_pairs = list(permutations(var_names, 2))
-    n = len(var_pairs)
-    signs = (res[: (n * d ** 2)] > 0).reshape((n, d, d))
-    constraints = {var_pair: sign for var_pair, sign in zip(var_pairs, signs)}
-
-    # ------------------------------------------------------------------------
-
-    raw_faces = recover_raw_values(d, var_names, constraints)
-    natural_faces = naturalize_values(*raw_faces)
-    collapsed_faces = collapse_values(*natural_faces)
-    A, B, C, D, E = collapsed_faces
-    dice_dict = {k: v for k, v in zip(var_names, collapsed_faces)}
-    for x, y in var_pairs:
-        print("%s: %i" % ((x, y), compare_dice(dice_dict[x], dice_dict[y])))
+    sat_solution = np.array(sat.get_model())
+    dice_solution = sat_to_dice(d, dice_names, sat_solution)
+    print(dice_solution)
 
 # ============================================================================
 # Code to find all solutions via SAT

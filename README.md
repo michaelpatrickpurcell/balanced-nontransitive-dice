@@ -7,8 +7,34 @@ The simplest way to get and start using `pysat` is to install the latest stable 
 $ pip install python-sat[pblib, aiger]
 ```
 
+## Interesting Three-Dice Sets
+The most interesting set of three dice that I've found is:
+
+|       | i   | ii  | iii | iv  | v   | vi  | vii | viii | ix  | x   | xi  | xii | xiii |
+| :-:   | --: | --: | --: | --: | --: | --: | --: | --:  | --: | --: | --: | --: | --:  |
+| **A** | 0   | 0   | 0   | 0   | 2   | 5   | 5   | 5    | 5   | 5   | 5   | 5   | 5    |
+| **B** | 4   | 4   | 4   | 4   | 4   | 4   | 4   | 4    | 4   | 4   | 4   | 4   | 4    |
+| **C** | 1   | 3   | 3   | 3   | 3   | 3   | 3   | 3    | 6   | 6   | 6   | 6   | 6    |
+
+Notice that:
+  - P{A > B} = P{B > C} = P{C > A} = 8/13
+
+This example is interesting because it settles a conjecture posed in
+the paper [Possible Probability and Irreducibility of Balanced Non-Transitive Dice](https://arxiv.org/pdf/2006.12866.pdf) by Injo Hur and Yeansu Kim.
+In that paper, the author's conjecture that the bias of a balanced set of dice is bounded above by 11/18. Because 11/18 < 8/13 this set provides a counterexample.
+
+In fact, this set of dice suggests an entire family of increasingly strong counterexamples.
+If we let $F_n$ be the $n_{th}$ Fibonacci number, with $F_1 = F_2 = 1$,  then there is a set of $F_{2n+1}$-sided dice that have bias $F_{2n} / F_{2n+1}$. One way to construct such as set is
+  - **A** = $[0] * (F_{2n - 1} - 1) + [2]*1 + [5] * F_{2n}$
+  - **B** = $[4] * F_{2n+1}$
+  - **C** = $[1] * 1 + [3] * (F_{2n} - 1) + [6] * F_{2n-1}$
+
+We have $F_5 = 5$, $F_6 = 8$, and $F_7 = 13$. Therefore the set of 13-sided dice
+described above above follows this pattern with $n = 3$.
+
 ## Interesting Four-Dice Sets
 The most interesting set of four dice that I've found is:
+
 |       | i   | ii  | iii | iv  |
 | :-:   | --: | --: | --: | --: |
 | **A** | 0   | 4   | 7   | 7   |
