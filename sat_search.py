@@ -5,7 +5,7 @@ from pysat.solvers import Minisat22
 from pysat.pb import PBEnc
 from itertools import product, permutations
 
-from utils import compare_dice, collapse_values, naturalize_values
+from utils import compare_dice, collapse_values, recover_values
 
 # =============================================================================
 
@@ -151,62 +151,13 @@ def sat_to_dice(d, dice_names, sat_solution, compress=True):
     signs_array = (sat_solution[: (n * d ** 2)] > 0).reshape((n, d, d))
     constraints = {v: s for v, s in zip(dice_pairs, signs_array)}
 
-    raw_faces = recover_raw_values(d, dice_names, constraints)
-    natural_faces = naturalize_values(*raw_faces)
+    natural_faces = recover_values(d, dice_names, constraints)
     if compress:
         dice_faces = collapse_values(*natural_faces)
         dice_dict = {k: v for k, v in zip(dice_names, dice_faces)}
     else:
         dice_dict = {k: v for k, v in zip(dice_names, natural_faces)}
     return dice_dict
-
-
-def recover_raw_values(d, var_names, constraints):
-    """
-    Find real-valued faces that satisfy the given constraints
-    """
-    raw_faces = dict()
-    raw_faces[var_names[0]] = list(np.arange(1, d + 1))
-
-    for var_name in var_names[1:]:
-        lower_bounds = np.zeros(d)
-        upper_bounds = (d + 1) * np.ones(d)
-        for k in raw_faces:
-            lower_bounds, upper_bounds = update_bounds(
-                lower_bounds, upper_bounds, constraints[(k, var_name)], raw_faces[k]
-            )
-        raw_faces[var_name] = find_faces(lower_bounds, upper_bounds)
-    return [raw_faces[v] for v in var_names]
-
-
-def update_bounds(lower_bounds, upper_bounds, constraints, faces):
-    """
-    Derive bounds on possible values from the specified constraints.
-    """
-    for i in range(d):
-        if i > 0:
-            lower_bounds[i] = max(lower_bounds[i], lower_bounds[i - 1])
-        for j in range(d):
-            if constraints[j, i]:
-                upper_bounds[i] = min(faces[j], upper_bounds[i])
-            else:
-                lower_bounds[i] = max(faces[j], lower_bounds[i])
-    return (lower_bounds, upper_bounds)
-
-
-def find_faces(lower_bounds, upper_bounds):
-    """
-    Find values for the faces that conform to the constraints
-    imposed by the other dice and that are monotonically increasing.
-    """
-    faces = []
-    faces.append((lower_bounds[0] + upper_bounds[0]) / 2)
-    for i in range(1, d):
-        # Update lower bound to ensure that the value of the current
-        # face witll be larger than the value of the previous face.
-        lower_bounds[i] = max(lower_bounds[i], faces[-1])
-        faces.append((lower_bounds[i] + upper_bounds[i]) / 2)
-    return faces
 
 
 def verify_solution(scores, dice_solution):
@@ -256,10 +207,10 @@ dice_pairs = list(permutations(dice_names, 2))
 n = len(dice_pairs)
 
 d = 4  # 6
-adj_score = 10  # 22
-acr_score = 8  # 18
+n1_score = 10  # 22
+n2_score = d ** 2 // 2  # 18
 
-temp = [adj_score, acr_score, d ** 2 - adj_score]
+temp = [n1_score, n2_score, d ** 2 - n1_score]
 S = [[temp[(j - i) % (m - 1)] for j in range(m - 1)] for i in range(m)]
 scores = {p: s for p, s in zip(dice_pairs, sum(S, []))}
 
@@ -287,14 +238,53 @@ m = len(dice_names)
 dice_pairs = list(permutations(dice_names, 2))
 n = len(dice_pairs)
 
-# d = 3
-# adj_score = 5
-# acr_score = 4
 d = 6
-adj_score = 24
-acr_score = 16
+n1_score = 24
+n2_score = 20
 
-temp = [adj_score, d ** 2 - acr_score, acr_score, d ** 2 - adj_score]
+temp = [n1_score, n2_score, d ** 2 - n2_score, d ** 2 - n1_score]
+S = [[temp[(j - i) % (m - 1)] for j in range(m - 1)] for i in range(m)]
+scores = {p: s for p, s in zip(dice_pairs, sum(S, []))}
+
+# ----------------------------------------------------------------------------
+
+clauses = build_clauses(d, dice_names, scores)
+
+sat = Minisat22()
+for clause in clauses:
+    sat.add_clause(clause)
+
+is_solvable = sat.solve()
+print(is_solvable)
+if is_solvable:
+    sat_solution = np.array(sat.get_model())
+    natural_solution = sat_to_dice(d, dice_names, sat_solution, compress=False)
+    print(natural_solution)
+    dice_solution = sat_to_dice(d, dice_names, sat_solution)
+    print(dice_solution)
+
+
+# =============================================================================
+# Seven dice sets
+# =============================================================================
+dice_names = ["A", "B", "C", "D", "E", "F", "G"]
+m = len(dice_names)
+
+dice_pairs = list(permutations(dice_names, 2))
+n = len(dice_pairs)
+
+d = 6  # 17
+n1_score = 20  # 187
+n2_score = 20  # 170
+n3_score = 16  # 153
+temp = [
+    n1_score,
+    n2_score,
+    n3_score,
+    d ** 2 - n3_score,
+    d ** 2 - n2_score,
+    d ** 2 - n1_score,
+]
 S = [[temp[(j - i) % (m - 1)] for j in range(m - 1)] for i in range(m)]
 scores = {p: s for p, s in zip(dice_pairs, sum(S, []))}
 
@@ -312,6 +302,64 @@ if is_solvable:
     sat_solution = np.array(sat.get_model())
     dice_solution = sat_to_dice(d, dice_names, sat_solution)
     print(dice_solution)
+
+
+# =============================================================================
+# Four player Oskar dice variant
+# =============================================================================
+m = 19
+letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+dice_names = [letters[i] for i in range(m)]
+
+dice_pairs = list(permutations(dice_names, 2))
+n = len(dice_pairs)
+
+d = 5  # 7 # 5
+score = 13  # 25  # 13
+mask_index = [1, 4, 5, 6, 7, 9, 11, 16, 17]
+mask = [1 if (i + 1) in mask_index else 0 for i in range(m - 1)]
+temp = [score if mask[i] else d ** 2 - score for i in range(m - 1)]
+S = [[temp[(j - i) % (m - 1)] for j in range(m - 1)] for i in range(m)]
+scores = {p: s for p, s in zip(dice_pairs, sum(S, []))}
+
+# ----------------------------------------------------------------------------
+
+clauses = build_clauses(d, dice_names, scores)
+
+sat = Minisat22()
+for clause in clauses:
+    sat.add_clause(clause)
+
+is_solvable = sat.solve()
+print(is_solvable, mask_index)
+if is_solvable:
+    sat_solution = np.array(sat.get_model())
+    dice_solution = sat_to_dice(d, dice_names, sat_solution, compress=False)
+    # print(dice_solution)
+
+# Here's a solution for 19 five-sided dice with bias = 13/25.
+# mask_index = [1, 4, 5, 6, 7, 9, 11, 16, 17]
+#
+# {'A': [0, 29, 37, 71, 90],
+#  'B': [13, 31, 54, 59, 69],
+#  'C': [6, 6, 46, 84, 86],
+#  'D': [21, 34, 39, 58, 74],
+#  'E': [4, 9, 56, 70, 89],
+#  'F': [22, 22, 48, 55, 79],
+#  'G': [10, 28, 45, 67, 76],
+#  'H': [18, 27, 43, 57, 81],
+#  'I': [25, 33, 38, 52, 77],
+#  'J': [3, 20, 35, 82, 88],
+#  'K': [1, 19, 53, 64, 91],
+#  'L': [17, 36, 42, 63, 68],
+#  'M': [5, 16, 49, 66, 92],
+#  'N': [2, 24, 41, 73, 87],
+#  'O': [8, 14, 50, 72, 83],
+#  'P': [7, 32, 51, 61, 75],
+#  'Q': [15, 26, 47, 60, 78],
+#  'R': [12, 23, 44, 62, 85],
+#  'S': [11, 30, 40, 65, 80]}
+
 
 # ============================================================================
 # Code to find all solutions via SAT

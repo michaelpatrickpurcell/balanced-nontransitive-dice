@@ -29,7 +29,20 @@ If we let $F_n$ be the $n_{th}$ Fibonacci number, with $F_1 = F_2 = 1$,  then th
   - **B** = $[4] * F_{2n+1}$
   - **C** = $[1] * 1 + [3] * (F_{2n} - 1) + [6] * F_{2n-1}$
 
-We have $F_5 = 5$, $F_6 = 8$, and $F_7 = 13$. Therefore the set of 13-sided dice
+It is clear that P{A > B} = P{B > C} = $(F_{2n+1}F_{2n}) / F_{2n+1}^2$.
+To complete the proof we use Cassini's Identity to conclude that
+$$ F_{2n-1}F_{2n+1} = F_{2n}^2 + 1.$$
+Therefore we have
+
+P{C > A} = $\frac{F_{2n-1}F_{2n+1} + (F_{2n-1} - 1) + (F_{2n} - 1)F_{2n-1}}{F_{2n+1}^2}$
+
+P{C > A} = $\frac{(F_{2n}^2 + 1) + F_{2n}F_{2n-1} -1}{F_{2n+1}^2}$
+
+P{C > A} = $\frac{F_{2n}(F_{2n} + F_{2n-1})}{F_{2n+1}^2}$
+
+P{C > A} = $\frac{F_{2n+1}F_{2n}}{F_{2n+1}^2}.$
+
+Recall that $F_5 = 5$, $F_6 = 8$, and $F_7 = 13$. Therefore the set of 13-sided dice
 described above above follows this pattern with $n = 3$.
 
 ## Interesting Four-Dice Sets
@@ -87,3 +100,30 @@ The following table describes the probability that the die in each row beats the
 | **C** | 4/9 | 3/9 |  x  | 6/9 | 5/9 |
 | **D** | 5/9 | 4/9 | 3/9 |  x  | 6/9 |
 | **E** | 6/9 | 5/9 | 4/9 | 3/9 |  x  |
+
+## Interesting Nineteen-Dice Sets (?!?)
+I found an interesting set of nineteen five-sided dice with the property that
+for any set of three of the dice (**X**, **Y**, **Z**) there is a fourth die **W**
+such that P{W > X} = P{W > Y} = P{W > Z} = 13/25.
+
+|       | i   | ii  | iii | iv  | v   |
+| :-:   | --: | --: | --: | --: | --: |
+| **A** | 0   | 31  | 39  | 73  | 92  |
+| **B** | 14  | 33  | 56  | 61  | 71  |
+| **C** | 6   | 7   | 48  | 86  | 88  |
+| **D** | 22  | 36  | 41  | 60  | 76  |
+| **E** | 4   | 10  | 58  | 72  | 91  |
+| **F** | 23  | 24  | 50  | 57  | 81  |
+| **G** | 11  | 30  | 47  | 69  | 78  |
+| **H** | 19  | 29  | 45  | 59  | 83  |
+| **I** | 27  | 35  | 40  | 54  | 79  |
+| **J** | 3   | 21  | 37  | 84  | 90  |
+| **K** | 1   | 20  | 55  | 66  | 93  |
+| **L** | 18  | 38  | 44  | 65  | 70  |
+| **M** | 5   | 17  | 51  | 68  | 94  |
+| **N** | 2   | 26  | 43  | 75  | 89  |
+| **O** | 9   | 15  | 52  | 74  | 85  |
+| **P** | 8   | 34  | 53  | 63  | 77  |
+| **Q** | 16  | 28  | 49  | 62  | 80  |
+| **R** | 13  | 25  | 46  | 64  | 87  |
+| **S** | 12  | 32  | 42  | 67  | 82  |
