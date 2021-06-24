@@ -132,3 +132,20 @@ def build_symmetry_clauses(d, var_dict, dice_names):
             symmetry_clauses.append([-var_dict[(v0 + "1", v + ("%i" % i))]])
             symmetry_clauses.append([var_dict[(v + ("%i" % i), v0 + "1")]])
     return symmetry_clauses
+
+
+def build_doubling_clauses(d, var_dict, dice_names):
+    f = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
+    doubling_clauses = []
+    for x, y in permutations(dice_names, 2):
+        for i, j in product(range(d), repeat=2):
+            for ii, jj in product(range(d), repeat=2):
+                i_max = max(i, ii)
+                j_max = max(j, jj)
+                doubled_key = ((f[x][i_max], f[x][i_max]), (f[y][j_max], f[y][j_max]))
+                v1 = var_dict[doubled_key]
+                key = ((f[x][i], f[x][ii]), (f[y][j], f[y][jj]))
+                v2 = var_dict[key]
+                doubling_clauses.append([-v1, v2])
+                doubling_clauses.append([v1, -v2])
+    return doubling_clauses

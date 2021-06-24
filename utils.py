@@ -11,6 +11,15 @@ def compare_dice(first, second):
     return hits
 
 
+def compare_doubled_dice(first, second):
+    hits = 0
+    for i,x in enumerate(first):
+        for j,y in enumerate(second):
+            if y < x:
+                hits += (2*i + 1)*(2*j + 1)
+    return hits
+
+
 def recover_values(d, dice_names, constraints):
     natural_faces = []
     for die in dice_names:
@@ -61,6 +70,15 @@ def verify_solution(scores, dice_solution):
     for x, y in scores:
         check = compare_dice(dice_solution[x], dice_solution[y])
         print((x, y), check, scores[(x, y)])
+
+
+def verify_doubling_solution(scores, doubled_scores, dice_solution):
+    verify_solution(scores, dice_solution)
+    print()
+    for x, y in scores:
+        check = compare_doubled_dice(dice_solution[x], dice_solution[y])
+        print((x, y), check, doubled_scores[(x, y)])
+
 
 
 # =================================================================
