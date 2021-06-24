@@ -74,11 +74,11 @@ for x, y in permutations(dice_names, 2):
 
 vpool = pysat.formula.IDPool(start_from=n * (d ** 4) + 1)
 
-clauses = []
 # If you build the cardinality clauses for the singled dice first,
 # then we fail to find known solutions.
 # I think that this has something to do with the extra variables that get
 # added for the pseudo-Boolean constraints.
+clauses = []
 clauses += build_converse_clauses(d, singleton_var_dict, dice_names, vpool)
 clauses += build_sorting_clauses(d, singleton_var_dict, dice_names)
 clauses += build_transitivity_clauses(d, singleton_var_dict, dice_names)
