@@ -71,6 +71,7 @@ The following table describes the probability that the die in each row beats the
 | **D** | 5/8 | 4/8 | 3/8 |  x  |
 
 Contrast this set with [Efron's Dice](https://en.wikipedia.org/wiki/Intransitive_dice#Efron's_dice). In that set, while the bias on the balanced nontransitive cycle is stronger, only one of the two nonadjacent pairs are evenly matched.
+
 ## Interesting Five-Dice Sets
 The most interesting set of five dice that I've found is:
 |       | i   | ii  | iii | iv  | v   | vi  |
@@ -100,6 +101,29 @@ The following table describes the probability that the die in each row beats the
 | **C** | 4/9 | 3/9 |  x  | 6/9 | 5/9 |
 | **D** | 5/9 | 4/9 | 3/9 |  x  | 6/9 |
 | **E** | 6/9 | 5/9 | 4/9 | 3/9 |  x  |
+
+## Interesting Six-Dice Sets
+The most interesting set of six dice that I've found is:
+|       | i   | ii  | iii | iv  | v   | vi  |
+| :-:   | --: | --: | --: | --: | --: | --: |
+| **A** | 0   | 2   | 12  | 12  | 14  | 22  |
+| **B** | 6   | 6   | 8   | 10  | 10  | 19  |
+| **C** | 3   | 5   | 5   | 17  | 17  | 17  |
+| **D** | 1   | 1   | 11  | 13  | 15  | 21  |
+| **E** | 7   | 7   | 7   | 9   | 9   | 20  |
+| **F** | 4   | 4   | 4   | 16  | 18  | 18  |
+
+Notice that:
+  - P{X > X + 1} = 7/12
+  - P{X > X + 2} = 5/12
+  - P{X > X + 3} = 6/12
+  - P{X > X + 4} = 7/12
+  - P{X > X + 5} = 5/12
+
+In particular, these dice have the property that for all X,Y,Z such that
+X -> Y -> Z, we have Z -> X.
+
+If we suppress edges between dice that are evenly matched, then we can diagram these relationships as a set of triangles that resembles Sierpinski's Triangle. 
 
 ## Interesting Nineteen-Dice Sets (?!?)
 I found an interesting set of nineteen five-sided dice with the property that

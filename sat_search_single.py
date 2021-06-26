@@ -3,7 +3,7 @@ import numpy as np
 from pysat.solvers import Minisat22
 from itertools import permutations
 
-from utils import compare_dice, collapse_values, recover_values
+from utils import compare_dice, compress_values, recover_values
 from utils import sat_to_dice, verify_solution
 from clauses import build_clauses
 
@@ -81,6 +81,27 @@ d = 6
 n1_score = 24
 n2_score = 20
 temp = [n1_score, n2_score, d ** 2 - n2_score, d ** 2 - n1_score]
+S = [[temp[(j - i) % (m - 1)] for j in range(m - 1)] for i in range(m)]
+scores = {p: s for p, s in zip(dice_pairs, sum(S, []))}
+
+dice_solution = sat_search(d, dice_names, scores)
+print(dice_solution)
+
+# =============================================================================
+# Six dice sets
+# =============================================================================
+dice_names = ["A", "B", "C", "D", "E", "F"]
+m = len(dice_names)
+
+dice_pairs = list(permutations(dice_names, 2))
+n = len(dice_pairs)
+
+d = 6
+
+n1_score = 21
+n2_score = 15
+n3_score = 18
+temp = [n1_score, n2_score, n3_score, d ** 2 - n2_score, d ** 2 - n1_score]
 S = [[temp[(j - i) % (m - 1)] for j in range(m - 1)] for i in range(m)]
 scores = {p: s for p, s in zip(dice_pairs, sum(S, []))}
 
