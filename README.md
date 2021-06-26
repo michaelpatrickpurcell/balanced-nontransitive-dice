@@ -123,7 +123,7 @@ Notice that:
 In particular, these dice have the property that for all X,Y,Z such that
 X -> Y -> Z, we have Z -> X.
 
-If we suppress edges between dice that are evenly matched, then we can diagram these relationships as a set of triangles that resembles Sierpinski's Triangle.
+If we suppress edges between dice that are evenly matched, then we can diagram these relationships as a set of eight interlocking three-dice sets, (A,B,C), (B,C,D), (C,D,E), (D,E,F), (E,F,A), (F,A,B), (A,E,C), and (B,F,D).
 
 ![Six Dice Diagram](./Diagrams/six_dice_diagram.png)
 
