@@ -125,7 +125,7 @@ X -> Y -> Z, we have Z -> X.
 
 If we suppress edges between dice that are evenly matched, then we can diagram these relationships as a set of triangles that resembles Sierpinski's Triangle.
 
-![Six Dice Diagram](Diagrams/six_dice_diagram.pdf)
+![Six Dice Diagram](./Diagrams/six_dice_diagram.png)
 
 ## Interesting Nineteen-Dice Sets (?!?)
 I found an interesting set of nineteen five-sided dice with the property that
