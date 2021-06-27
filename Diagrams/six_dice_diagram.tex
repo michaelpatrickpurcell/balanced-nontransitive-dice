@@ -1,11 +1,13 @@
 \documentclass{standalone}
 
 \usepackage{tikz}
+\usetikzlibrary{shapes}
 \usetikzlibrary{arrows.meta}
 
 \begin{document}
 
 	\begin{tikzpicture}
+		\path (-2.5, 0.5) -- (2.5, 0.5) -- (2.6, -3.5) -- (-2.6, -3.5) -- cycle;
 		\node[draw, circle]  (A) at (0,0) {A};
 		\node[draw, circle]  (B) at (1,-1.4) {B};
 		\node[draw, circle]  (C) at (2,-2.8) {C};
@@ -19,11 +21,11 @@
 		\draw[very thick,  -latex] (E) to (F);
 		\draw[very thick,  -latex] (F) to (A);
 
-		\draw[very thick,  -latex] (A) to [bend right=33.75] (E);
+		\draw[very thick,  -latex] (A) to [bend right=37.5] (E);
 		\draw[very thick,  -latex] (B) to (F);
-		\draw[very thick,  -latex] (C) to [bend right=33.75]  (A);
+		\draw[very thick,  -latex] (C) to [bend right=37.5]  (A);
 		\draw[very thick,  -latex] (D) to (B);
-		\draw[very thick,  -latex] (E) to [bend right=33.75]  (C);
+		\draw[very thick,  -latex] (E) to [bend right=37.5]  (C);
 		\draw[very thick,  -latex] (F) to (D);
 
 	\end{tikzpicture}

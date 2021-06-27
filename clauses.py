@@ -156,7 +156,7 @@ def build_symmetry_clauses(d, var_dict, dice_names):
     return symmetry_clauses
 
 
-def build_doubling_clauses(d, var_dict, dice_names):
+def build_max_doubling_clauses(d, var_dict, dice_names):
     f = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
     doubling_clauses = []
     for x, y in permutations(dice_names, 2):

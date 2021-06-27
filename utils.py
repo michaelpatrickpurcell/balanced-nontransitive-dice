@@ -31,7 +31,7 @@ def recover_values(d, dice_names, constraints):
     return natural_faces
 
 
-def collapse_values(*args):
+def compress_values(*args):
     T = {}
     for i, die in enumerate(args):
         T.update({k: i for k in die})
@@ -39,27 +39,33 @@ def collapse_values(*args):
     T_list = [T[i] for i in range(n)]
     current_value = 0
     current_die = T_list[0]
-    collapsed_dice = [[] for _ in args]
-    collapsed_dice[current_die].append(current_value)
+    compressed_dice = [[] for _ in args]
+    compressed_dice[current_die].append(current_value)
     for i in range(1, n):
         previous_die = current_die
         current_die = T_list[i]
         if current_die != previous_die:
             current_value += 1
-        collapsed_dice[current_die].append(current_value)
-    return collapsed_dice
+        compressed_dice[current_die].append(current_value)
+    return compressed_dice
 
 
-def sat_to_dice(d, dice_names, sat_solution, compress=True):
+def sat_to_constraints(d, dice_names, sat_solution, compress=True):
     dice_pairs = list(permutations(dice_names, 2))
     n = len(dice_pairs)
 
     signs_array = (sat_solution[: (n * d ** 2)] > 0).reshape((n, d, d))
     constraints = {v: s for v, s in zip(dice_pairs, signs_array)}
 
+    return constraints
+
+
+def sat_to_dice(d, dice_names, sat_solution, compress=True):
+    constraints = sat_to_constraints(d, dice_names, sat_solution)
+
     natural_faces = recover_values(d, dice_names, constraints)
     if compress:
-        dice_faces = collapse_values(*natural_faces)
+        dice_faces = compress_values(*natural_faces)
         dice_dict = {k: v for k, v in zip(dice_names, dice_faces)}
     else:
         dice_dict = {k: v for k, v in zip(dice_names, natural_faces)}
@@ -75,7 +81,7 @@ def verify_solution(scores, dice_solution):
 def verify_doubling_solution(scores, doubled_scores, dice_solution):
     verify_solution(scores, dice_solution)
     print()
-    for x, y in scores:
+    for x, y in doubled_scores:
         check = compare_doubled_dice(dice_solution[x], dice_solution[y])
         print((x, y), check, doubled_scores[(x, y)])
 

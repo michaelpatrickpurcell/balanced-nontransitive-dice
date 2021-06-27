@@ -102,6 +102,11 @@ The following table describes the probability that the die in each row beats the
 | **D** | 5/9 | 4/9 | 3/9 |  x  | 6/9 |
 | **E** | 6/9 | 5/9 | 4/9 | 3/9 |  x  |
 
+We can represent these relationships in a diagram with two different edge weights.  Here a solid arrow from X to Y indicates that P{X > Y} = 2/3 while a dashed arrow from X to Y indicates that P{X > Y} = 5/9.
+
+![Five Dice Diagram](./Diagrams/five_dice_diagram.png)
+
+
 ## Interesting Six-Dice Sets
 The most interesting set of six dice that I've found is:
 |       | i   | ii  | iii | iv  | v   | vi  |
@@ -123,7 +128,7 @@ Notice that:
 In particular, these dice have the property that for all X,Y,Z such that
 X -> Y -> Z, we have Z -> X.
 
-If we suppress edges between dice that are evenly matched, then we can diagram these relationships as a set of eight interlocking three-dice sets, (A,B,C), (B,C,D), (C,D,E), (D,E,F), (E,F,A), (F,A,B), (A,E,C), and (B,F,D).
+If we suppress edges between dice that are evenly matched, then we can represent these relationships with a diagram with eight interlocking three-dice sets, (A,B,C), (B,C,D), (C,D,E), (D,E,F), (E,F,A), (F,A,B), (A,E,C), and (B,F,D).
 
 ![Six Dice Diagram](./Diagrams/six_dice_diagram.png)
 
