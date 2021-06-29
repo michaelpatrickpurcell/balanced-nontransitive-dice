@@ -9,8 +9,8 @@ def build_clauses(d, dice_names, scores, vpool=None):
     """
     dice_pairs = list(permutations(dice_names, 2))
     n = len(dice_pairs)
-    f = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
-    var_lists = {(x, y): list(product(f[x], f[y])) for (x, y) in dice_pairs}
+    faces = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
+    var_lists = {(x, y): list(product(faces[x], faces[y])) for (x, y) in dice_pairs}
 
     variables = sum(var_lists.values(), [])
     var_dict = dict((v, k) for k, v in enumerate(variables, 1))
@@ -20,10 +20,73 @@ def build_clauses(d, dice_names, scores, vpool=None):
 
     clauses = []
     clauses += build_cardinality_clauses(d, var_dict, var_lists, scores, vpool)
-    clauses += build_converse_clauses(d, var_dict, dice_names)  # , vpool)
-    clauses += build_sorting_clauses(d, var_dict, f)  # dice_names)
-    clauses += build_transitivity_clauses(d, var_dict, f)  # dice_names)
+    clauses += build_converse_clauses(d, var_dict, dice_names)
+    clauses += build_sorting_clauses(d, var_dict, faces)
+    clauses += build_transitivity_clauses(d, var_dict, faces)
     clauses += build_symmetry_clauses(d, var_dict, dice_names)
+    return clauses
+
+
+def build_max_min_clauses(d, dice_names, scores, max_scores, min_scores, vpool=None):
+    dice_pairs = list(permutations(dice_names, 2))
+    n = len(dice_pairs)
+    start_enum = 1
+
+    # ----------------------------------------------------------------------------
+
+    faces_1v1 = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
+    var_lists_1v1 = {
+        (x, y): list(product(faces_1v1[x], faces_1v1[y])) for (x, y) in dice_pairs
+    }
+    variables_1v1 = sum(var_lists_1v1.values(), [])
+
+    var_dict_1v1 = dict((v, k) for k, v in enumerate(variables_1v1, start_enum))
+    start_enum += len(variables_1v1)
+
+    # ----------------------------------------------------------------------------
+
+    faces_2v2 = {x: list(product(faces_1v1[x], repeat=2)) for x in dice_names}
+    var_lists_2v2 = {
+        (x, y): list(product(faces_2v2[x], faces_2v2[y])) for (x, y) in dice_pairs
+    }
+    variables_2v2 = sum(var_lists_2v2.values(), [])
+
+    var_dict_2v2_max = dict((v, k) for k, v in enumerate(variables_2v2, start_enum))
+    start_enum += len(variables_2v2)
+
+    var_dict_2v2_min = dict((v, k) for k, v in enumerate(variables_2v2, start_enum))
+    start_enum += len(variables_2v2)
+
+    # ----------------------------------------------------------------------------
+    # Set up a variable poll that will be used for all cardinality or
+    # threshold constraint clauses
+    if vpool == None:
+        vpool = pysat.formula.IDPool(start_from=start_enum)
+
+    # ----------------------------------------------------------------------------
+
+    # Build clauses for one-die comparisons
+    clauses = []
+    clauses += build_converse_clauses(d, var_dict_1v1, dice_names)
+    clauses += build_sorting_clauses(d, var_dict_1v1, faces_1v1)
+    clauses += build_transitivity_clauses(d, var_dict_1v1, faces_1v1)
+    clauses += build_symmetry_clauses(d, var_dict_1v1, dice_names)
+    clauses += build_cardinality_clauses(d, var_dict_1v1, var_lists_1v1, scores, vpool)
+
+    # ----------------------------------------------------------------------------
+    # Build clauses for two-dice comparisons with max-pooling
+    clauses += build_max_doubling_clauses(d, var_dict_1v1, var_dict_2v2_max, dice_names)
+    clauses += build_lower_bound_clauses(
+        d ** 2, var_dict_2v2_max, var_lists_2v2, max_scores, vpool
+    )
+
+    # ----------------------------------------------------------------------------
+    # Build clauses for two-dice comparisons with min-pooling
+    clauses += build_min_doubling_clauses(d, var_dict_1v1, var_dict_2v2_min, dice_names)
+    clauses += build_upper_bound_clauses(
+        d ** 2, var_dict_2v2_min, var_lists_2v2, min_scores, vpool
+    )
+
     return clauses
 
 

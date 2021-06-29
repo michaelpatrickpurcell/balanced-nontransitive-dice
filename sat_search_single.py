@@ -18,7 +18,6 @@ def sat_search(d, dice_names, scores):
         sat.add_clause(clause)
 
     is_solvable = sat.solve()
-    print(is_solvable)
     if is_solvable:
         sat_solution = np.array(sat.get_model())
         dice_solution = sat_to_dice(d, dice_names, sat_solution)
