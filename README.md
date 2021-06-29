@@ -24,14 +24,13 @@ the paper [Possible Probability and Irreducibility of Balanced Non-Transitive Di
 In that paper, the author's conjecture that the bias of a balanced set of dice is bounded above by 11/18. Because 11/18 < 8/13 this set provides a counterexample.
 
 In fact, this set of dice suggests an entire family of increasingly strong counterexamples.
-If we let $F_n$ be the $n_{th}$ Fibonacci number, with $F_1 = F_2 = 1$,  then there is a set of $F_{2n+1}$-sided dice that have bias $F_{2n} / F_{2n+1}$. One way to construct such as set is
-  - **A** = $[0] * (F_{2n - 1} - 1) + [2]*1 + [5] * F_{2n}$
-  - **B** = $[4] * F_{2n+1}$
-  - **C** = $[1] * 1 + [3] * (F_{2n} - 1) + [6] * F_{2n-1}$
+If we let $F_n$ be the $n_{th}$ Fibonacci number, i.e. $F_1 = F_2 = 1$ and $F_{n+1} = F_n + F_{n-1}$ for $n \geq 3$,  then there is a set of $F_{2n+1}$-sided dice that have bias $F_{2n} / F_{2n+1}$. One way to construct such as set is
+  - A = $[0] * (F_{2n - 1} - 1) + [2]*1 + [5] * F_{2n}$
+  - B = $[4] * F_{2n+1}$
+  - C = $[1] * 1 + [3] * (F_{2n} - 1) + [6] * F_{2n-1}$
 
-It is clear that P{A > B} = P{B > C} = $(F_{2n+1}F_{2n}) / F_{2n+1}^2$.
-To complete the proof we use Cassini's Identity to conclude that
-$$ F_{2n-1}F_{2n+1} = F_{2n}^2 + 1.$$
+It is clear that P{A > B} = P{B > C} = $F_{2n+1}F_{2n} / F_{2n+1}^2$.
+To complete the proof we use [Cassini's Identity](https://en.wikipedia.org/wiki/Cassini_and_Catalan_identities) to conclude that $F_{2n-1}F_{2n+1} = F_{2n}^2 + 1.$
 Therefore we have
 
 P{C > A} = $\frac{F_{2n-1}F_{2n+1} + (F_{2n-1} - 1) + (F_{2n} - 1)F_{2n-1}}{F_{2n+1}^2}$
@@ -134,7 +133,7 @@ If we suppress edges between dice that are evenly matched, then we can represent
 
 ## Interesting Nineteen-Dice Sets (?!?)
 I found an interesting set of nineteen five-sided dice with the property that
-for any set of three of the dice (**X**, **Y**, **Z**) there is a fourth die **W**
+for any set of three of the dice (X, Y, Z) there is a fourth die W
 such that P{W > X} = P{W > Y} = P{W > Z} = 13/25.
 
 |       | i   | ii  | iii | iv  | v   |

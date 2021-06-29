@@ -3,7 +3,7 @@ from pysat.pb import PBEnc
 from itertools import product, permutations
 
 
-def build_clauses(d, dice_names, scores):
+def build_clauses(d, dice_names, scores, vpool=None):
     """
     Build the clauses that describe the SAT problem.
     """
@@ -15,7 +15,8 @@ def build_clauses(d, dice_names, scores):
     variables = sum(var_lists.values(), [])
     var_dict = dict((v, k) for k, v in enumerate(variables, 1))
 
-    vpool = pysat.formula.IDPool(start_from=n * d ** 2 + 1)
+    if vpool == None:
+        vpool = pysat.formula.IDPool(start_from=n * d ** 2 + 1)
 
     clauses = []
     clauses += build_cardinality_clauses(d, var_dict, var_lists, scores, vpool)
@@ -156,18 +157,31 @@ def build_symmetry_clauses(d, var_dict, dice_names):
     return symmetry_clauses
 
 
-def build_max_doubling_clauses(d, var_dict, dice_names):
+def build_max_doubling_clauses(d, var_dict_1v1, var_dict_2v2, dice_names):
     f = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
     doubling_clauses = []
     for x, y in permutations(dice_names, 2):
         for i, ii, j, jj in product(range(d), repeat=4):
-            if (i != ii) or (j != jj):
-                i_max = max(i, ii)
-                j_max = max(j, jj)
-                max_key = ((f[x][i_max], f[x][i_max]), (f[y][j_max], f[y][j_max]))
-                v1 = var_dict[max_key]
-                key = ((f[x][i], f[x][ii]), (f[y][j], f[y][jj]))
-                v2 = var_dict[key]
-                doubling_clauses.append([-v1, v2])
-                doubling_clauses.append([v1, -v2])
+            i_max = max(i, ii)
+            j_max = max(j, jj)
+            v1 = var_dict_1v1[(f[x][i_max], f[y][j_max])]
+            key = ((f[x][i], f[x][ii]), (f[y][j], f[y][jj]))
+            v2 = var_dict_2v2[key]
+            doubling_clauses.append([-v1, v2])
+            doubling_clauses.append([v1, -v2])
+    return doubling_clauses
+
+
+def build_min_doubling_clauses(d, var_dict_1v1, var_dict_2v2, dice_names):
+    f = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
+    doubling_clauses = []
+    for x, y in permutations(dice_names, 2):
+        for i, ii, j, jj in product(range(d), repeat=4):
+            i_min = min(i, ii)
+            j_min = min(j, jj)
+            v1 = var_dict_1v1[(f[x][i_min], f[y][j_min])]
+            key = ((f[x][i], f[x][ii]), (f[y][j], f[y][jj]))
+            v2 = var_dict_2v2[key]
+            doubling_clauses.append([-v1, v2])
+            doubling_clauses.append([v1, -v2])
     return doubling_clauses

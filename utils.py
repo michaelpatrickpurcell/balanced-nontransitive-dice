@@ -11,12 +11,17 @@ def compare_dice(first, second):
     return hits
 
 
-def compare_doubled_dice(first, second):
+def compare_doubled_dice(first, second, comp="max"):
+    d = len(first)
     hits = 0
-    for i,x in enumerate(first):
-        for j,y in enumerate(second):
+    if comp == "max":
+        indices = range(1, 2*d, 2)
+    if comp == "min":
+        indices = range(2*d-1, 0, -2)
+    for i,x in zip(indices, first):
+        for j,y in zip(indices, second):
             if y < x:
-                hits += (2*i + 1)*(2*j + 1)
+                hits += i*j
     return hits
 
 
@@ -78,12 +83,16 @@ def verify_solution(scores, dice_solution):
         print((x, y), check, scores[(x, y)])
 
 
-def verify_doubling_solution(scores, doubled_scores, dice_solution):
+def verify_doubling_solution(scores, doubled_scores_max, doubled_scores_min, dice_solution):
     verify_solution(scores, dice_solution)
     print()
-    for x, y in doubled_scores:
-        check = compare_doubled_dice(dice_solution[x], dice_solution[y])
-        print((x, y), check, doubled_scores[(x, y)])
+    for x, y in doubled_scores_max:
+        check = compare_doubled_dice(dice_solution[x], dice_solution[y], "max")
+        print((x, y), check, doubled_scores_max[(x, y)])
+    print()
+    for x, y in doubled_scores_min:
+        check = compare_doubled_dice(dice_solution[x], dice_solution[y], "min")
+        print((x, y), check, doubled_scores_min[(x, y)])
 
 
 
