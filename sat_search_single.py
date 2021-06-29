@@ -38,13 +38,19 @@ n = len(dice_pairs)
 
 d = 13  # 34
 
+# ----------------------------------------------------------------------------
+
 n1_score = 104  # 714
 temp = [n1_score, d ** 2 - n1_score]
 S = [[temp[(j - i) % (m - 1)] for j in range(m - 1)] for i in range(m)]
 scores = {p: s for p, s in zip(dice_pairs, sum(S, []))}
 
+# ----------------------------------------------------------------------------
+
 dice_solution = sat_search(d, dice_names, scores)
 print(dice_solution)
+if dice_solution is not None:
+    verify_solution(scores, dice_solution)
 
 # =============================================================================
 # Four dice sets
@@ -57,14 +63,20 @@ n = len(dice_pairs)
 
 d = 4  # 6
 
+# ----------------------------------------------------------------------------
+
 n1_score = 10  # 22
 n2_score = d ** 2 // 2  # 18
 temp = [n1_score, n2_score, d ** 2 - n1_score]
 S = [[temp[(j - i) % (m - 1)] for j in range(m - 1)] for i in range(m)]
 scores = {p: s for p, s in zip(dice_pairs, sum(S, []))}
 
+# ----------------------------------------------------------------------------
+
 dice_solution = sat_search(d, dice_names, scores)
 print(dice_solution)
+if dice_solution is not None:
+    verify_solution(scores, dice_solution)
 
 # =============================================================================
 # Five dice sets
@@ -77,14 +89,20 @@ n = len(dice_pairs)
 
 d = 6
 
+# ----------------------------------------------------------------------------
+
 n1_score = 24
 n2_score = 20
 temp = [n1_score, n2_score, d ** 2 - n2_score, d ** 2 - n1_score]
 S = [[temp[(j - i) % (m - 1)] for j in range(m - 1)] for i in range(m)]
 scores = {p: s for p, s in zip(dice_pairs, sum(S, []))}
 
+# ----------------------------------------------------------------------------
+
 dice_solution = sat_search(d, dice_names, scores)
 print(dice_solution)
+if dice_solution is not None:
+    verify_solution(scores, dice_solution)
 
 # =============================================================================
 # Six dice sets
@@ -97,6 +115,8 @@ n = len(dice_pairs)
 
 d = 6
 
+# ----------------------------------------------------------------------------
+
 n1_score = 21
 n2_score = 15
 n3_score = 18
@@ -104,8 +124,12 @@ temp = [n1_score, n2_score, n3_score, d ** 2 - n2_score, d ** 2 - n1_score]
 S = [[temp[(j - i) % (m - 1)] for j in range(m - 1)] for i in range(m)]
 scores = {p: s for p, s in zip(dice_pairs, sum(S, []))}
 
+# ----------------------------------------------------------------------------
+
 dice_solution = sat_search(d, dice_names, scores)
 print(dice_solution)
+if dice_solution is not None:
+    verify_solution(scores, dice_solution)
 
 # =============================================================================
 # Seven dice sets
@@ -118,6 +142,8 @@ n = len(dice_pairs)
 
 d = 6
 
+# ----------------------------------------------------------------------------
+
 score = 20
 mask_index = [1, 2, 4]
 mask = [1 if (i + 1) in mask_index else 0 for i in range(m - 1)]
@@ -125,8 +151,12 @@ temp = [score if mask[i] else d ** 2 - score for i in range(m - 1)]
 S = [[temp[(j - i) % (m - 1)] for j in range(m - 1)] for i in range(m)]
 scores = {p: s for p, s in zip(dice_pairs, sum(S, []))}
 
+# ----------------------------------------------------------------------------
+
 dice_solution = sat_search(d, dice_names, scores)
 print(dice_solution)
+if dice_solution is not None:
+    verify_solution(scores, dice_solution)
 
 # =============================================================================
 # Four player Oskar dice variant
@@ -140,6 +170,8 @@ n = len(dice_pairs)
 
 d = 5  # 7
 
+# ----------------------------------------------------------------------------
+
 score = 13  # 25
 mask_index = [1, 4, 5, 6, 7, 9, 11, 16, 17]
 mask = [1 if (i + 1) in mask_index else 0 for i in range(m - 1)]
@@ -147,8 +179,12 @@ temp = [score if mask[i] else d ** 2 - score for i in range(m - 1)]
 S = [[temp[(j - i) % (m - 1)] for j in range(m - 1)] for i in range(m)]
 scores = {p: s for p, s in zip(dice_pairs, sum(S, []))}
 
+# ----------------------------------------------------------------------------
+
 dice_solution = sat_search(d, dice_names, scores)
 print(dice_solution)
+if dice_solution is not None:
+    verify_solution(scores, dice_solution)
 
 # ============================================================================
 # Code to find all solutions via SAT

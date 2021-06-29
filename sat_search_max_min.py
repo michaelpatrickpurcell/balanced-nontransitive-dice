@@ -1,6 +1,5 @@
 import numpy as np
 from itertools import permutations, product
-import pysat
 from pysat.solvers import Minisat22
 
 from utils import sat_to_dice

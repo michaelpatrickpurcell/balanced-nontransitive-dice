@@ -71,26 +71,32 @@ def build_max_min_clauses(d, dice_names, scores, max_scores, min_scores, vpool=N
     clauses += build_sorting_clauses(d, var_dict_1v1, faces_1v1)
     clauses += build_transitivity_clauses(d, var_dict_1v1, faces_1v1)
     clauses += build_symmetry_clauses(d, var_dict_1v1, dice_names)
-    clauses += build_cardinality_clauses(d, var_dict_1v1, var_lists_1v1, scores, vpool)
+    clauses += build_cardinality_clauses(
+        d, var_dict_1v1, var_lists_1v1, scores, vpool, PBEnc.equals
+    )
 
     # ----------------------------------------------------------------------------
     # Build clauses for two-dice comparisons with max-pooling
-    clauses += build_max_doubling_clauses(d, var_dict_1v1, var_dict_2v2_max, dice_names)
-    clauses += build_lower_bound_clauses(
-        d ** 2, var_dict_2v2_max, var_lists_2v2, max_scores, vpool
+    clauses += build_doubling_clauses(
+        d, var_dict_1v1, var_dict_2v2_max, dice_names, max
+    )
+    clauses += build_cardinality_clauses(
+        d ** 2, var_dict_2v2_max, var_lists_2v2, max_scores, vpool, PBEnc.atleast
     )
 
     # ----------------------------------------------------------------------------
     # Build clauses for two-dice comparisons with min-pooling
-    clauses += build_min_doubling_clauses(d, var_dict_1v1, var_dict_2v2_min, dice_names)
-    clauses += build_upper_bound_clauses(
-        d ** 2, var_dict_2v2_min, var_lists_2v2, min_scores, vpool
+    clauses += build_doubling_clauses(
+        d, var_dict_1v1, var_dict_2v2_min, dice_names, min
+    )
+    clauses += build_cardinality_clauses(
+        d ** 2, var_dict_2v2_min, var_lists_2v2, min_scores, vpool, PBEnc.atmost
     )
 
     return clauses
 
 
-def build_cardinality_clauses(d, var_dict, var_lists, scores, vpool):
+def build_cardinality_clauses(d, var_dict, var_lists, scores, vpool, pb=PBEnc.equals):
     """
     These clauses ensure that each pair of dice have the specified relationship.
     """
@@ -100,35 +106,7 @@ def build_cardinality_clauses(d, var_dict, var_lists, scores, vpool):
         var_list = var_lists[dice_pair]
         score = scores[dice_pair]
         lits = [var_dict[v] for v in var_list]
-        cnf = PBEnc.equals(lits=lits, bound=score, vpool=vpool, encoding=0)
-        cardinality_clauses += cnf.clauses
-    return cardinality_clauses
-
-
-def build_lower_bound_clauses(d, var_dict, var_lists, scores, vpool):
-    """
-    These clauses ensure that each pair of dice have the specified relationship.
-    """
-    dice_pairs = var_lists.keys()
-    cardinality_clauses = []
-    for dice_pair, score in scores.items():
-        var_list = var_lists[dice_pair]
-        lits = [var_dict[v] for v in var_list]
-        cnf = PBEnc.geq(lits=lits, bound=score, vpool=vpool, encoding=0)
-        cardinality_clauses += cnf.clauses
-    return cardinality_clauses
-
-
-def build_upper_bound_clauses(d, var_dict, var_lists, scores, vpool):
-    """
-    These clauses ensure that each pair of dice have the specified relationship.
-    """
-    dice_pairs = var_lists.keys()
-    cardinality_clauses = []
-    for dice_pair, score in scores.items():
-        var_list = var_lists[dice_pair]
-        lits = [var_dict[v] for v in var_list]
-        cnf = PBEnc.atmost(lits=lits, bound=score, vpool=vpool, encoding=0)
+        cnf = pb(lits=lits, bound=score, vpool=vpool, encoding=0)
         cardinality_clauses += cnf.clauses
     return cardinality_clauses
 
@@ -220,29 +198,14 @@ def build_symmetry_clauses(d, var_dict, dice_names):
     return symmetry_clauses
 
 
-def build_max_doubling_clauses(d, var_dict_1v1, var_dict_2v2, dice_names):
+def build_doubling_clauses(d, var_dict_1v1, var_dict_2v2, dice_names, pool_func):
     f = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
     doubling_clauses = []
     for x, y in permutations(dice_names, 2):
         for i, ii, j, jj in product(range(d), repeat=4):
-            i_max = max(i, ii)
-            j_max = max(j, jj)
-            v1 = var_dict_1v1[(f[x][i_max], f[y][j_max])]
-            key = ((f[x][i], f[x][ii]), (f[y][j], f[y][jj]))
-            v2 = var_dict_2v2[key]
-            doubling_clauses.append([-v1, v2])
-            doubling_clauses.append([v1, -v2])
-    return doubling_clauses
-
-
-def build_min_doubling_clauses(d, var_dict_1v1, var_dict_2v2, dice_names):
-    f = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
-    doubling_clauses = []
-    for x, y in permutations(dice_names, 2):
-        for i, ii, j, jj in product(range(d), repeat=4):
-            i_min = min(i, ii)
-            j_min = min(j, jj)
-            v1 = var_dict_1v1[(f[x][i_min], f[y][j_min])]
+            i_star = pool_func(i, ii)
+            j_star = pool_func(j, jj)
+            v1 = var_dict_1v1[(f[x][i_star], f[y][j_star])]
             key = ((f[x][i], f[x][ii]), (f[y][j], f[y][jj]))
             v2 = var_dict_2v2[key]
             doubling_clauses.append([-v1, v2])
