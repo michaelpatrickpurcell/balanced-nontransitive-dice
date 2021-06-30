@@ -1,31 +1,8 @@
 # SAT strategy
 import numpy as np
-from pysat.solvers import Minisat22
 from itertools import permutations
 
-from utils import compare_dice, compress_values, recover_values
-from utils import sat_to_dice, verify_solution
-from clauses import build_clauses
-
-# ============================================================================
-
-
-def sat_search(d, dice_names, scores):
-    clauses = build_clauses(d, dice_names, scores)
-
-    sat = Minisat22()
-    for clause in clauses:
-        sat.add_clause(clause)
-
-    is_solvable = sat.solve()
-    if is_solvable:
-        sat_solution = np.array(sat.get_model())
-        dice_solution = sat_to_dice(d, dice_names, sat_solution)
-    else:
-        dice_solution = None
-
-    return dice_solution
-
+from utils import verify_solution, sat_search
 
 # =============================================================================
 # Three-dice sets
@@ -168,12 +145,39 @@ dice_names = [letters[i] for i in range(m)]
 dice_pairs = list(permutations(dice_names, 2))
 n = len(dice_pairs)
 
-d = 5  # 7
+d = 5
 
 # ----------------------------------------------------------------------------
 
-score = 13  # 25
+score = 13
 mask_index = [1, 4, 5, 6, 7, 9, 11, 16, 17]
+mask = [1 if (i + 1) in mask_index else 0 for i in range(m - 1)]
+temp = [score if mask[i] else d ** 2 - score for i in range(m - 1)]
+S = [[temp[(j - i) % (m - 1)] for j in range(m - 1)] for i in range(m)]
+scores = {p: s for p, s in zip(dice_pairs, sum(S, []))}
+
+# ----------------------------------------------------------------------------
+
+dice_solution = sat_search(d, dice_names, scores)
+print(dice_solution)
+if dice_solution is not None:
+    verify_solution(scores, dice_solution)
+
+# =============================================================================
+# Five player Oskar dice variant
+# =============================================================================
+m = 67
+dice_names = ["D%i" % i for i in range(m)]
+
+dice_pairs = list(permutations(dice_names, 2))
+n = len(dice_pairs)
+
+d = 5
+
+# ----------------------------------------------------------------------------
+
+score = d ** 2 // 2 + 1
+mask_index = sorted([x for x in set(np.arange(1, m) ** 2 % m)])
 mask = [1 if (i + 1) in mask_index else 0 for i in range(m - 1)]
 temp = [score if mask[i] else d ** 2 - score for i in range(m - 1)]
 S = [[temp[(j - i) % (m - 1)] for j in range(m - 1)] for i in range(m)]

@@ -1,5 +1,7 @@
 import numpy as np
 from itertools import permutations
+from pysat.solvers import Minisat22
+from clauses import build_clauses
 
 
 def compare_dice(first, second):
@@ -15,13 +17,13 @@ def compare_doubled_dice(first, second, comp="max"):
     d = len(first)
     hits = 0
     if comp == "max":
-        indices = range(1, 2*d, 2)
+        indices = range(1, 2 * d, 2)
     if comp == "min":
-        indices = range(2*d-1, 0, -2)
-    for i,x in zip(indices, first):
-        for j,y in zip(indices, second):
+        indices = range(2 * d - 1, 0, -2)
+    for i, x in zip(indices, first):
+        for j, y in zip(indices, second):
             if y < x:
-                hits += i*j
+                hits += i * j
     return hits
 
 
@@ -83,7 +85,9 @@ def verify_solution(scores, dice_solution):
         print((x, y), check, scores[(x, y)])
 
 
-def verify_doubling_solution(scores, doubled_scores_max, doubled_scores_min, dice_solution):
+def verify_doubling_solution(
+    scores, doubled_scores_max, doubled_scores_min, dice_solution
+):
     verify_solution(scores, dice_solution)
     print()
     for x, y in doubled_scores_max:
@@ -93,3 +97,23 @@ def verify_doubling_solution(scores, doubled_scores_max, doubled_scores_min, dic
     for x, y in doubled_scores_min:
         check = compare_doubled_dice(dice_solution[x], dice_solution[y], "min")
         print((x, y), check, doubled_scores_min[(x, y)])
+
+
+# ============================================================================
+
+
+def sat_search(d, dice_names, scores):
+    clauses = build_clauses(d, dice_names, scores)
+
+    sat = Minisat22()
+    for clause in clauses:
+        sat.add_clause(clause)
+
+    is_solvable = sat.solve()
+    if is_solvable:
+        sat_solution = np.array(sat.get_model())
+        dice_solution = sat_to_dice(d, dice_names, sat_solution)
+    else:
+        dice_solution = None
+
+    return dice_solution
