@@ -20,11 +20,26 @@ def build_permutation_clauses(d, var_dict_2, var_dict_m, dice_names):
     permutation_clauses = []
     for xs in permutations(dice_names):
         for iis in product(range(d), repeat=m):
-            vs = [var_dict_2[(faces[xs[j]][iis[j]], faces[xs[j+1]][iis[j+1]])] for j in range(m-1)]
+            vs = [
+                var_dict_2[(faces[xs[j]][iis[j]], faces[xs[j + 1]][iis[j + 1]])]
+                for j in range(m - 1)
+            ]
             w = var_dict_m[tuple([faces[xs[j]][iis[j]] for j in range(m)])]
             permutation_clauses.append([-v for v in vs] + [w])
             permutation_clauses.extend([[-w, v] for v in vs])
     return permutation_clauses
+
+
+def build_exclusivity_clauses(d, var_dict_m, dice_names, vpool):
+    m = len(dice_names)
+    faces = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
+    exclusivity_clauses = []
+    for x in product(range(d), repeat=m):
+        column = [faces[dice_names[i]][x[i]] for i in range(m)]
+        lits = [var_dict_m[tuple(key)] for key in permutations(column)]
+        cnf = PBEnc.equals(lits=lits, bound=1, vpool=vpool, encoding=0)
+        exclusivity_clauses += cnf.clauses
+    return exclusivity_clauses
 
 
 # def build_winner_clauses(d, var_dict_2, var_dict_m, dice_names):
@@ -40,7 +55,6 @@ def build_permutation_clauses(d, var_dict_2, var_dict_m, dice_names):
 #     return permutation_clauses
 
 
-
 def verify_go_first(dice_solution):
     counts = {x: 0 for x in permutations(range(len(dice_solution)))}
     for outcome in product(*dice_solution.values()):
@@ -53,13 +67,13 @@ m = 3
 letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 dice_names = [letters[i] for i in range(m)]
 
-d = 6
+d = 3
 faces = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
 
-pairwise_scores = {x: d**2 // 2 for x in permutations(dice_names, 2)}
+pairwise_scores = {x: d ** 2 // 2 for x in permutations(dice_names, 2)}
 
-score = d**m // factorial(m, exact=True)
-scores = {x:score  for x in permutations(dice_names)}
+score = d ** m // factorial(m, exact=True)
+scores = {x: score for x in permutations(dice_names)}
 
 # ============================================================================
 
@@ -69,9 +83,7 @@ start_enum = 1
 
 # ----------------------------------------------------------------------------
 
-var_lists_2 = {
-    (x, y): list(product(faces[x], faces[y])) for (x, y) in dice_pairs
-}
+var_lists_2 = {(x, y): list(product(faces[x], faces[y])) for (x, y) in dice_pairs}
 variables_2 = sum(var_lists_2.values(), [])
 
 var_dict_2 = dict((v, k) for k, v in enumerate(variables_2, start_enum))
@@ -107,7 +119,7 @@ clauses += build_cardinality_clauses(d, var_dict_2, var_lists_2, pairwise_scores
 # ----------------------------------------------------------------------------
 
 clauses += build_permutation_clauses(d, var_dict_2, var_dict_m, dice_names)
-
+clauses += build_exclusivity_clauses(d, var_dict_m, dice_names, vpool)
 clauses += build_cardinality_clauses(d, var_dict_m, var_lists_m, scores, vpool)
 
 # ----------------------------------------------------------------------------
@@ -117,7 +129,7 @@ sat = Minisat22()
 for clause in clauses:
     sat.add_clause(clause)
 
-%time is_solvable = sat.solve()
+is_solvable = sat.solve()
 if is_solvable:
     model = np.array(sat.get_model())
     sat_solution = np.array(sat.get_model())
