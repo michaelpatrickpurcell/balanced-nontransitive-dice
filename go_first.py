@@ -14,19 +14,31 @@ from clauses import build_cardinality_clauses
 from utils import sat_to_dice
 
 
-def build_permutation_clauses(d, var_dict_2, var_dict_3, dice_names):
+def build_permutation_clauses(d, var_dict_2, var_dict_m, dice_names):
+    m = len(dice_names)
     faces = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
     permutation_clauses = []
-    for x, y, z in permutations(dice_names):
-        for i, j, k in product(range(d), repeat=3):
-            v1 = var_dict_2[(faces[x][i], faces[y][j])]
-            v2 = var_dict_2[(faces[y][j], faces[z][k])]
-            # v3 = var_dict_2[(f[x][i], f[z][k])]
-
-            v4 = var_dict_3[(faces[x][i], faces[y][j], faces[z][k])]
-            permutation_clauses.append([-v1, -v2, v4])
-            permutation_clauses.extend([[-v4, v1], [-v4, v2]])
+    for xs in permutations(dice_names):
+        for iis in product(range(d), repeat=m):
+            vs = [var_dict_2[(faces[xs[j]][iis[j]], faces[xs[j+1]][iis[j+1]])] for j in range(m-1)]
+            w = var_dict_m[tuple([faces[xs[j]][iis[j]] for j in range(m)])]
+            permutation_clauses.append([-v for v in vs] + [w])
+            permutation_clauses.extend([[-w, v] for v in vs])
     return permutation_clauses
+
+
+# def build_winner_clauses(d, var_dict_2, var_dict_m, dice_names):
+#     m = len(dice_names)
+#     faces = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
+#     winner_clauses = []
+#     for xs in permutations(dice_names):
+#         for iis in product(range(d), repeat=m):
+#             vs = [var_dict_2[(faces[xs[0]][iis[0]], faces[xs[j]][iis[j]])] for j in range(1,m)]
+#             w = var_dict_m[tuple([faces[xs[j]][iis[j]] for j in range(m)])]
+#             permutation_clauses.append([-v for v in vs] + [w])
+#             permutation_clauses.extend([[-w, v] for v in vs])
+#     return permutation_clauses
+
 
 
 def verify_go_first(dice_solution):
@@ -37,14 +49,16 @@ def verify_go_first(dice_solution):
 
 
 # ============================================================================
-
 m = 3
-dice_names = ["A", "B", "C"]
+letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+dice_names = [letters[i] for i in range(m)]
 
-d = 7
+d = 6
 faces = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
 
-score = d**3 // factorial(m, exact=True)
+pairwise_scores = {x: d**2 // 2 for x in permutations(dice_names, 2)}
+
+score = d**m // factorial(m, exact=True)
 scores = {x:score  for x in permutations(dice_names)}
 
 # ============================================================================
@@ -65,14 +79,14 @@ start_enum += len(variables_2)
 
 # ----------------------------------------------------------------------------
 
-dice_triplets = list(permutations(dice_names, 3))
-n3 = len(dice_triplets)
+dice_perms = list(permutations(dice_names, m))
+nm = len(dice_perms)
 
-var_lists_3 = {(x, y, z): list(product(faces[x], faces[y], faces[z])) for (x, y, z) in dice_triplets}
-variables_3 = sum(var_lists_3.values(), [])
+var_lists_m = {xs: list(product(*[faces[x] for x in xs])) for xs in dice_perms}
+variables_m = sum(var_lists_m.values(), [])
 
-var_dict_3 = dict((v, k) for k, v in enumerate(variables_3, start_enum))
-start_enum += len(variables_3)
+var_dict_m = dict((v, k) for k, v in enumerate(variables_m, start_enum))
+start_enum += len(variables_m)
 
 # ----------------------------------------------------------------------------
 # Set up a variable poll that will be used for all cardinality or
@@ -88,14 +102,14 @@ clauses += build_converse_clauses(d, var_dict_2, dice_names)
 clauses += build_sorting_clauses(d, var_dict_2, faces)
 clauses += build_transitivity_clauses(d, var_dict_2, faces)
 clauses += build_symmetry_clauses(d, var_dict_2, dice_names)
+clauses += build_cardinality_clauses(d, var_dict_2, var_lists_2, pairwise_scores, vpool)
 
 # ----------------------------------------------------------------------------
 
-clauses += build_permutation_clauses(d, var_dict_2, var_dict_3, dice_names)
+clauses += build_permutation_clauses(d, var_dict_2, var_dict_m, dice_names)
 
-clauses += build_cardinality_clauses(d, var_dict_3, var_lists_3, scores, vpool)
+clauses += build_cardinality_clauses(d, var_dict_m, var_lists_m, scores, vpool)
 
-print("Finished building clauses.")
 # ----------------------------------------------------------------------------
 
 print("Starting SAT solver.")
@@ -103,7 +117,7 @@ sat = Minisat22()
 for clause in clauses:
     sat.add_clause(clause)
 
-is_solvable = sat.solve()
+%time is_solvable = sat.solve()
 if is_solvable:
     model = np.array(sat.get_model())
     sat_solution = np.array(sat.get_model())
@@ -112,10 +126,10 @@ else:
     dice_solution = None
 
 print(dice_solution)
-
-counts = verify_go_first(dice_solution)
-print(counts)
-print(np.all(np.array(list(counts.values())) == score))
+if is_solvable:
+    counts = verify_go_first(dice_solution)
+    print(counts)
+    print(np.all(np.array(list(counts.values())) == score))
 
 # ============================================================================
 
