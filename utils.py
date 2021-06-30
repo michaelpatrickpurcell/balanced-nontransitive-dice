@@ -1,7 +1,7 @@
 import numpy as np
 from itertools import permutations
 from pysat.solvers import Minisat22
-from clauses import build_clauses
+from clauses import build_clauses, build_max_min_clauses
 
 
 def compare_dice(first, second):
@@ -113,6 +113,27 @@ def sat_search(d, dice_names, scores):
     if is_solvable:
         sat_solution = np.array(sat.get_model())
         dice_solution = sat_to_dice(d, dice_names, sat_solution)
+    else:
+        dice_solution = None
+
+    return dice_solution
+
+
+# ----------------------------------------------------------------------------
+
+
+def sat_search_max_min(d, dice_names, scores, max_scores, min_scores):
+    clauses = build_max_min_clauses(d, dice_names, scores, max_scores, min_scores)
+
+    sat = Minisat22()
+    for clause in clauses:
+        sat.add_clause(clause)
+
+    is_solvable = sat.solve()
+    if is_solvable:
+        model = np.array(sat.get_model())
+        sat_solution = np.array(sat.get_model())
+        dice_solution = sat_to_dice(d, dice_names, sat_solution, compress=False)
     else:
         dice_solution = None
 

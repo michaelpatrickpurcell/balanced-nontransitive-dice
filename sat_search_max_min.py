@@ -1,32 +1,7 @@
 import numpy as np
 from itertools import permutations, product
-from pysat.solvers import Minisat22
 
-from utils import sat_to_dice
-from utils import verify_doubling_solution
-
-from clauses import build_max_min_clauses
-
-# ============================================================================
-
-
-def sat_search_max_min(d, dice_names, scores, max_scores, min_scores):
-    clauses = build_max_min_clauses(d, dice_names, scores, max_scores, min_scores)
-
-    sat = Minisat22()
-    for clause in clauses:
-        sat.add_clause(clause)
-
-    is_solvable = sat.solve()
-    if is_solvable:
-        model = np.array(sat.get_model())
-        sat_solution = np.array(sat.get_model())
-        dice_solution = sat_to_dice(d, dice_names, sat_solution, compress=False)
-    else:
-        dice_solution = None
-
-    return dice_solution
-
+from utils import verify_doubling_solution, sat_search_max_min
 
 # ============================================================================
 # Three-dice sets with max-pool/min-pool reversing
