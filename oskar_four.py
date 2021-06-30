@@ -3,6 +3,12 @@ from itertools import permutations
 
 from utils import verify_solution, sat_search
 
+from argparse import ArgumentParser
+
+parser = ArgumentParser(description="Find a set of three-player Oskar dice.")
+parser.add_argument("number_of_sides", type=int)
+args = parser.parse_args()
+
 # =============================================================================
 # Four player Oskar dice variant
 # =============================================================================
@@ -12,7 +18,7 @@ dice_names = ["D%i" % i for i in range(m)]
 dice_pairs = list(permutations(dice_names, 2))
 n = len(dice_pairs)
 
-d = 5
+d = args.number_of_sides
 
 # ----------------------------------------------------------------------------
 
