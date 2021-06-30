@@ -5,7 +5,7 @@ from utils import verify_solution, sat_search
 
 from argparse import ArgumentParser
 
-parser = ArgumentParser(description="Find a set of three-player Oskar dice.")
+parser = ArgumentParser(description="Find a set of five-player Oskar dice.")
 parser.add_argument("number_of_sides", type=int)
 args = parser.parse_args()
 
