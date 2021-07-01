@@ -63,11 +63,11 @@ def verify_go_first(dice_solution):
 
 
 # ============================================================================
-m = 3
+m = 4
 letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 dice_names = [letters[i] for i in range(m)]
 
-d = 12
+d = 6
 faces = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
 
 pairwise_scores = {x: d ** 2 // 2 for x in permutations(dice_names, 2)}
@@ -136,7 +136,7 @@ sat = Glucose4() # Wall time: 207 ms
 # sat = MapleChrono() # Wall time: 4min 42s
 # sat = MapleCM() # Wall time: 11.7 s
 # sat = Maplesat() # Wall time: 5.64 s
-# sat = Minicard() # Wall time: 9.07 s
+# sat = Minicard() # Wall time: 9.07 s
 # sat = MinisatGH() # Wall time: 8.44 s
 
 
@@ -173,19 +173,30 @@ if is_solvable:
 
 
 # ============================================================================
-m = 3
+m = 5
 letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 dice_names = [letters[i] for i in range(m)]
 
-d = 12
+d = 6
 faces = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
 
 pairwise_scores = {x: d ** 2 // 2 for x in permutations(dice_names, 2)}
 
-dice_perms = [("A","B","C"), ("B","A","C"), ("C", "A", "B")]
+dice_perms1 = [("A","B","C"), ("B","C","D"), ("C","D","E"), ("D", "E", "A"), ("E", "A", "B")]
+dice_perms1 += [("A","B","D"), ("B","C","E"), ("C","D","A"), ("D", "E", "B"), ("E", "A", "C")]
+dice_perms2 = sum([list(permutations(dp))[2::2] for dp in dice_perms1], [])
 
-score = d ** m // m
-scores = {x: score for x in dice_perms}
+dice_perms = dice_perms1 + dice_perms2
+
+score1 = d ** 3 // 3
+scores1 = dict()
+for x in dice_perms1:
+    scores1[x] = score1
+
+score2 = d ** 3 // 3
+scores2 = dict()
+for x in dice_perms2:
+    scores2[x] = score2
 
 # ============================================================================
 
@@ -229,7 +240,8 @@ clauses += build_symmetry_clauses(d, var_dict_2, dice_names)
 
 clauses += build_winner_clauses(d, var_dict_2, var_dict_m, dice_names, dice_perms)
 # clauses += build_exclusivity_clauses(d, var_dict_m, dice_names, vpool)
-clauses += build_cardinality_clauses(d, var_dict_m, var_lists_m, scores, vpool)
+clauses += build_cardinality_clauses(d, var_dict_m, var_lists_m, scores1, vpool, pb=PBEnc.atleast)
+clauses += build_cardinality_clauses(d, var_dict_m, var_lists_m, scores2, vpool, pb=PBEnc.atmost)
 
 # ----------------------------------------------------------------------------
 
@@ -265,3 +277,22 @@ if is_solvable:
     counts = verify_go_first(dice_solution)
     print(counts)
     print(np.all(np.array(list(counts.values())) == score))
+
+
+counts = dict()
+for xs in dice_perms1:
+    for ys in permutations(xs):
+        counts[ys] = 0
+        dice_triple = [dice_solution[y] for y in ys]
+        for face_triple in product(*dice_triple):
+            if face_triple[0] == max(face_triple):
+                counts[ys] += 1
+        print("%s: %s" % (ys, counts[ys]))
+    print()
+
+
+# {'A': array([ 0,  9, 10, 21, 24, 25]),
+#  'B': array([ 5, 11, 12, 20, 22, 23]),
+#  'C': array([14, 15, 16, 17, 18, 19]),
+#  'D': array([ 1,  2,  3,  4, 28, 29]),
+#  'E': array([ 6,  7,  8, 13, 26, 27])}
