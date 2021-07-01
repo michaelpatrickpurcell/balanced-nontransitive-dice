@@ -5,8 +5,8 @@ from itertools import permutations, product
 
 import pysat
 from pysat.pb import PBEnc
-from pysat.solvers import Minisat22
-
+from pysat.solvers import Minisat22, Glucose4, Lingeling, Mergesat3
+from pysat.solvers import *
 from clauses import build_converse_clauses, build_sorting_clauses
 from clauses import build_transitivity_clauses, build_symmetry_clauses
 from clauses import build_cardinality_clauses
@@ -20,11 +20,24 @@ def build_permutation_clauses(d, var_dict_2, var_dict_m, dice_names):
     permutation_clauses = []
     for xs in permutations(dice_names):
         for iis in product(range(d), repeat=m):
-            vs = [
-                var_dict_2[(faces[xs[j]][iis[j]], faces[xs[j + 1]][iis[j + 1]])]
-                for j in range(m - 1)
-            ]
-            w = var_dict_m[tuple([faces[xs[j]][iis[j]] for j in range(m)])]
+            z = list(zip(xs, iis))
+            vs = [var_dict_2[(faces[x][i], faces[y][j])] for ((x,i), (y,j)) in zip(z, z[1:])]
+            w = var_dict_m[tuple([faces[y][j] for y,j in z])]
+            permutation_clauses.append([-v for v in vs] + [w])
+            permutation_clauses.extend([[-w, v] for v in vs])
+    return permutation_clauses
+
+
+def build_winner_clauses(d, var_dict_2, var_dict_m, dice_names, dice_perms):
+    m = len(dice_names)
+    faces = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
+    permutation_clauses = []
+    for xs in dice_perms:
+        for iis in product(range(d), repeat=m):
+            x,i = xs[0], iis[0]
+            z = list(zip(xs[1:], iis[1:]))
+            vs = [var_dict_2[(faces[x][i], faces[y][j])] for y,j in z]
+            w = var_dict_m[tuple([faces[x][i]] + [faces[y][j] for y,j in z])]
             permutation_clauses.append([-v for v in vs] + [w])
             permutation_clauses.extend([[-w, v] for v in vs])
     return permutation_clauses
@@ -42,19 +55,6 @@ def build_exclusivity_clauses(d, var_dict_m, dice_names, vpool):
     return exclusivity_clauses
 
 
-# def build_winner_clauses(d, var_dict_2, var_dict_m, dice_names):
-#     m = len(dice_names)
-#     faces = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
-#     winner_clauses = []
-#     for xs in permutations(dice_names):
-#         for iis in product(range(d), repeat=m):
-#             vs = [var_dict_2[(faces[xs[0]][iis[0]], faces[xs[j]][iis[j]])] for j in range(1,m)]
-#             w = var_dict_m[tuple([faces[xs[j]][iis[j]] for j in range(m)])]
-#             permutation_clauses.append([-v for v in vs] + [w])
-#             permutation_clauses.extend([[-w, v] for v in vs])
-#     return permutation_clauses
-
-
 def verify_go_first(dice_solution):
     counts = {x: 0 for x in permutations(range(len(dice_solution)))}
     for outcome in product(*dice_solution.values()):
@@ -67,7 +67,7 @@ m = 3
 letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 dice_names = [letters[i] for i in range(m)]
 
-d = 3
+d = 12
 faces = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
 
 pairwise_scores = {x: d ** 2 // 2 for x in permutations(dice_names, 2)}
@@ -125,11 +125,25 @@ clauses += build_cardinality_clauses(d, var_dict_m, var_lists_m, scores, vpool)
 # ----------------------------------------------------------------------------
 
 print("Starting SAT solver.")
-sat = Minisat22()
+# sat = Minisat22() # Wall time: 8.63 s
+# sat = Glucose3() # Wall time: 174 ms
+sat = Glucose4() # Wall time: 207 ms
+# sat = Lingeling() # Wall time: 2.35 s
+# sat = Mergesat3() # Wall time: 21.8 s
+# sat = Cadical() # Wall time: 1min 16s
+# sat = Gluecard3() # Wall time: 185 ms
+# sat = Gluecard4() # Wall time: 187 ms
+# sat = MapleChrono() # Wall time: 4min 42s
+# sat = MapleCM() # Wall time: 11.7 s
+# sat = Maplesat() # Wall time: 5.64 s
+# sat = Minicard() # Wall time: 9.07 s
+# sat = MinisatGH() # Wall time: 8.44 s
+
+
 for clause in clauses:
     sat.add_clause(clause)
 
-is_solvable = sat.solve()
+%time is_solvable = sat.solve()
 if is_solvable:
     model = np.array(sat.get_model())
     sat_solution = np.array(sat.get_model())
@@ -156,3 +170,98 @@ if is_solvable:
 # counts = verify_go_first(go_first_4x12)
 # print(counts)
 # print(np.all(np.array(list(counts.values())) == score))
+
+
+# ============================================================================
+m = 3
+letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+dice_names = [letters[i] for i in range(m)]
+
+d = 12
+faces = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
+
+pairwise_scores = {x: d ** 2 // 2 for x in permutations(dice_names, 2)}
+
+dice_perms = [("A","B","C"), ("B","A","C"), ("C", "A", "B")]
+
+score = d ** m // m
+scores = {x: score for x in dice_perms}
+
+# ============================================================================
+
+dice_pairs = list(permutations(dice_names, 2))
+n2 = len(dice_pairs)
+start_enum = 1
+
+# ----------------------------------------------------------------------------
+
+var_lists_2 = {(x, y): list(product(faces[x], faces[y])) for (x, y) in dice_pairs}
+variables_2 = sum(var_lists_2.values(), [])
+
+var_dict_2 = dict((v, k) for k, v in enumerate(variables_2, start_enum))
+start_enum += len(variables_2)
+
+# ----------------------------------------------------------------------------
+
+var_lists_m = {xs: list(product(*[faces[x] for x in xs])) for xs in dice_perms}
+variables_m = sum(var_lists_m.values(), [])
+
+var_dict_m = dict((v, k) for k, v in enumerate(variables_m, start_enum))
+start_enum += len(variables_m)
+
+# ----------------------------------------------------------------------------
+# Set up a variable poll that will be used for all cardinality or
+# threshold constraint clauses
+# if vpool == None:
+vpool = pysat.formula.IDPool(start_from=start_enum)
+
+# ----------------------------------------------------------------------------
+print("Building Clauses")
+# Build clauses for one-die comparisons
+clauses = []
+clauses += build_converse_clauses(d, var_dict_2, dice_names)
+clauses += build_sorting_clauses(d, var_dict_2, faces)
+clauses += build_transitivity_clauses(d, var_dict_2, faces)
+clauses += build_symmetry_clauses(d, var_dict_2, dice_names)
+# clauses += build_cardinality_clauses(d, var_dict_2, var_lists_2, pairwise_scores, vpool)
+
+# ----------------------------------------------------------------------------
+
+clauses += build_winner_clauses(d, var_dict_2, var_dict_m, dice_names, dice_perms)
+# clauses += build_exclusivity_clauses(d, var_dict_m, dice_names, vpool)
+clauses += build_cardinality_clauses(d, var_dict_m, var_lists_m, scores, vpool)
+
+# ----------------------------------------------------------------------------
+
+print("Starting SAT solver.")
+# sat = Minisat22() # Wall time: 8.63 s
+# sat = Glucose3() # Wall time: 174 ms
+sat = Glucose4() # Wall time: 207 ms
+# sat = Lingeling() # Wall time: 2.35 s
+# sat = Mergesat3() # Wall time: 21.8 s
+# sat = Cadical() # Wall time: 1min 16s
+# sat = Gluecard3() # Wall time: 185 ms
+# sat = Gluecard4() # Wall time: 187 ms
+# sat = MapleChrono() # Wall time: 4min 42s
+# sat = MapleCM() # Wall time: 11.7 s
+# sat = Maplesat() # Wall time: 5.64 s
+# sat = Minicard() # Wall time: 9.07 s
+# sat = MinisatGH() # Wall time: 8.44 s
+
+
+for clause in clauses:
+    sat.add_clause(clause)
+
+%time is_solvable = sat.solve()
+if is_solvable:
+    model = np.array(sat.get_model())
+    sat_solution = np.array(sat.get_model())
+    dice_solution = sat_to_dice(d, dice_names, sat_solution, compress=False)
+else:
+    dice_solution = None
+
+print(dice_solution)
+if is_solvable:
+    counts = verify_go_first(dice_solution)
+    print(counts)
+    print(np.all(np.array(list(counts.values())) == score))
