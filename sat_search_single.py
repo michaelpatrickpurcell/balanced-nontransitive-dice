@@ -13,11 +13,11 @@ m = len(dice_names)
 dice_pairs = list(permutations(dice_names, 2))
 n = len(dice_pairs)
 
-d = 13  # 34
+d = 34  # 13
 
 # ----------------------------------------------------------------------------
 
-n1_score = 104  # 714
+n1_score = 714  # 104
 temp = [n1_score, d ** 2 - n1_score]
 S = [[temp[(j - i) % (m - 1)] for j in range(m - 1)] for i in range(m)]
 scores = {p: s for p, s in zip(dice_pairs, sum(S, []))}
@@ -166,7 +166,7 @@ if dice_solution is not None:
 # =============================================================================
 # Five player Oskar dice variant
 # =============================================================================
-m = 67
+m = 67  # 67
 dice_names = ["D%i" % i for i in range(m)]
 
 dice_pairs = list(permutations(dice_names, 2))
@@ -185,22 +185,7 @@ scores = {p: s for p, s in zip(dice_pairs, sum(S, []))}
 
 # ----------------------------------------------------------------------------
 
-dice_solution = sat_search(d, dice_names, scores)
+dice_solution = sat_search_card(d, dice_names, scores)
 print(dice_solution)
 if dice_solution is not None:
     verify_solution(scores, dice_solution)
-
-# ============================================================================
-# Code to find all solutions via SAT
-# ============================================================================
-
-# counter = 0
-# is_solvable = m.solve()
-# print(is_solvable)
-# while is_solvable:
-#     counter += 1
-#     res = m.get_model()
-#     print(counter, res[: (8 * d ** 2)])
-#     elim = [-1 * r for r in res[: (8 * d ** 2)]]
-#     m.add_clause(elim)
-#     is_solvable = m.solve()
