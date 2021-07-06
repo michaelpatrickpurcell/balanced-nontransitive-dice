@@ -68,7 +68,7 @@ for x, lits in cardinality_lits_2.items():
     sat.add_atmost(conv_lits, d ** 2 - scores[x])
 
 sat_solutions = []
-TRIALS = 2**16
+TRIALS = 2 ** 16
 is_solvable = True
 for i in tqdm(range(TRIALS)):
     is_solvable = sat.solve()  # assumptions=assumptions)
@@ -90,17 +90,17 @@ for sat_solution in tqdm(sat_solutions):
 # ============================================================================
 
 print("Creating master_dict")
-master_dict = {i:x for i,x in enumerate(constraints)}
+master_dict = {i: x for i, x in enumerate(constraints)}
 
 # with open('go_first_d12_master_dict.pickle', 'wb') as handle:
 #     pickle.dump(master_dict, handle)
 
 comp_dict = {}
-for i,x in tqdm(master_dict.items()):
+for i, x in tqdm(master_dict.items()):
     comp_dict[i] = []
-    for j,y in master_dict.items():
+    for j, y in master_dict.items():
         temp = np.sum(x @ y)
-        if temp == d**3 // 6:
+        if temp == d ** 3 // 6:
             comp_dict[i].append(j)
 
 # with open('go_first_d12_comp_dict.pickle', 'wb') as handle:
@@ -120,13 +120,13 @@ for i in tqdm(comp_dict):
     for j in comp_dict[i]:
         for k in comp_dict[j]:
             if i in comp_dict[k]:
-                survivors.append((i,j,k))
+                survivors.append((i, j, k))
 
 print("Deduping survivors")
 deduped_survivors = []
-for i,j,k in tqdm(survivors):
-    if np.all(master_dict[i][0,:] == 0) and np.all(master_dict[k][:,0] == 1):
-        deduped_survivors.append((i,j,k))
+for i, j, k in tqdm(survivors):
+    if np.all(master_dict[i][0, :] == 0) and np.all(master_dict[k][:, 0] == 1):
+        deduped_survivors.append((i, j, k))
 
 print("Verifying results")
 dice_solutions = []
@@ -139,7 +139,6 @@ for survivor in tqdm(deduped_survivors):
     temp[("C", "A")] = np.array(master_dict[survivor[2]]).astype(np.bool)
     temp[("A", "C")] = np.transpose(temp[("C", "A")]) ^ True
 
-
     natural_faces = recover_values(d, ["A", "B", "C"], temp)
     dice_dict = {k: v for k, v in zip(["A", "B", "C"], natural_faces)}
     dice_solutions.append(dice_dict)
@@ -150,3 +149,128 @@ for survivor in tqdm(deduped_survivors):
     # else:
     #     print("Good hit")
     #     print(dice_dict)
+
+
+words, segmented_words = zip(*[dice_to_word(x) for x in dice_solutions])
+
+atoms = [["ABC", "ACB"], ["BAC", "BCA"], ["CAB", "CBA"]]
+valid_solutions = []
+for x, y, z in product(*atoms):
+    word = "".join([x, x[::-1], y, y[::-1], z, z[::-1]])
+    dice_solution = word_to_dice(word)
+    print(dice_solution)
+    is_valid = verify_go_first(dice_solution)
+    if is_valid:
+        valid_solutions.append(dice_solution)
+
+
+valid_solutions = []
+for x, y, z in product(sum(atoms, []), repeat=3):
+    word = "".join([x, x[::-1], y, y[::-1], z, z[::-1]])
+    dice_solution = word_to_dice(word)
+    is_valid = verify_go_first(dice_solution)
+    if is_valid:
+        valid_solutions.append(dice_solution)
+
+
+m = 4
+n = (m * (m - 1)) // 2
+d = 12
+temp = list(permutations("ABCD"))
+atoms = ["".join(t) for t in temp]
+valid_solutions = []
+for x, y, z in product(atoms[:6], atoms[18:24], atoms[12:18]):
+    word = "".join(
+        [x, x[::-1], y, y[::-1], z, z[::-1], z, z[::-1], y, y[::-1], x, x[::-1]]
+    )
+    dice_solution = word_to_dice(word)
+    print(dice_solution)
+    is_valid = verify_go_first(dice_solution)
+    if is_valid:
+        valid_solutions.append(dice_solution)
+
+
+valid_words = [dice_to_word(x)[0] for x in valid_solutions]
+for vw in valid_words:
+    counts = {}
+    for i in range(len(vw) // 2):
+        s = vw[2 * i : 2 * (i + 1)]
+        if s in counts:
+            counts[s] += 1
+        else:
+            counts[s] = 1
+    print(counts)
+    print()
+
+
+atoms = list(permutations("abcd", 2))
+atoms = ["".join(x) for x in atoms]
+
+word = ""
+while atoms:
+    for x, y in combinations(atoms, 2):
+        if set(x + y) == set("abcd"):
+            word += x + y + y[::-1] + x[::-1]
+            atoms.pop(atoms.index(x))
+            atoms.pop(atoms.index(x[::-1]))
+            atoms.pop(atoms.index(y))
+            atoms.pop(atoms.index(y[::-1]))
+            break
+
+
+def rotate_left(chunk):
+    return chunk[1:] + chunk[:1]
+
+
+def rotate_right(chunk):
+    return chunk[-1:] + chunk[:-1]
+
+
+n = 8
+rot1_word = ""
+for i in range(len(word) // n):
+    rot1_word += rotate_left(word[n * i : n * i + n // 2])
+    rot1_word += rotate_right(word[n * i + n // 2 : n * i + n])
+
+rot2_word = ""
+for i in range(len(rot1_word) // n):
+    rot2_word += rotate_left(rot1_word[n * i : n * i + n // 2])
+    rot2_word += rotate_right(rot1_word[n * i + n // 2 : n * i + n])
+
+rot3_word = ""
+for i in range(len(rot2_word) // n):
+    rot3_word += rotate_left(rot2_word[n * i : n * i + n // 2])
+    rot3_word += rotate_right(rot2_word[n * i + n // 2 : n * i + n])
+
+
+word_segments = [word[i * n : (i + 1) * n] for i in range(len(word) // n)]
+rot1_word_segments = [
+    rot1_word[i * n : (i + 1) * n] for i in range(len(rot1_word) // n)
+]
+rot2_word_segments = [
+    rot2_word[i * n : (i + 1) * n] for i in range(len(rot2_word) // n)
+]
+rot3_word_segments = [
+    rot3_word[i * n : (i + 1) * n] for i in range(len(rot3_word) // n)
+]
+interleaved_segments = list(zip(word_segments))  # , rot1_word_segments,
+# rot2_word_segments, rot3_word_segments))
+
+big_word = "".join(sum(interleaved_segments, tuple()))
+
+dice = word_to_dice(big_word + big_word[::-1])
+
+
+atoms = list(permutations("abcdef", 3))
+atoms = ["".join(x) for x in atoms]
+
+word = ""
+while atoms:
+    for x, y in combinations(atoms, 2):
+        if set(x + y) == set("abcdef"):
+            word += x + y + y[::-1] + x[::-1]
+            atoms.pop(atoms.index(x))
+            atoms.pop(atoms.index(x[::-1]))
+            atoms.pop(atoms.index(y))
+            atoms.pop(atoms.index(y[::-1]))
+            break

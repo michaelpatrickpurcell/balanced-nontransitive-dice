@@ -185,7 +185,7 @@ scores = {p: s for p, s in zip(dice_pairs, sum(S, []))}
 
 # ----------------------------------------------------------------------------
 
-dice_solution = sat_search_card(d, dice_names, scores)
+dice_solution = sat_search(d, dice_names, scores)
 print(dice_solution)
 if dice_solution is not None:
     verify_solution(scores, dice_solution)

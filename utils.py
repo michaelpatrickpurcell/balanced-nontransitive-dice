@@ -83,6 +83,30 @@ def sat_to_dice(d, dice_names, sat_solution, compress=True):
     return dice_dict
 
 
+def dice_to_word(dice_solution):
+    dice_names = list(dice_solution.keys())
+    m = len(dice_names)
+    d = len(dice_solution[dice_names[0]])
+    foo = [[(x, dice_solution[x][i]) for i in range(d)] for x in dice_names]
+    bar = sum(foo, [])
+    ram = sorted(bar, key=lambda x: x[1])
+    word = "".join([t[0] for t in ram])
+    segments = [word[i : (i + m)] for i in range(0, m * d, m)]
+    segmented_word = " ".join(segments)
+    return word, segmented_word
+
+
+def word_to_dice(word):
+    dice_names = set(word)
+    dice_solution = dict()
+    for i, w in enumerate(word):
+        if w in dice_solution:
+            dice_solution[w].append(i)
+        else:
+            dice_solution[w] = [i]
+    return dice_solution
+
+
 # ----------------------------------------------------------------------------
 
 
@@ -109,6 +133,7 @@ def verify_doubling_solution(
 def verify_go_first(dice_solution):
     m = len(dice_solution)
     keys = list(dice_solution.keys())
+    print(keys)
     d = len(dice_solution[keys[0]])
     check = d ** m // factorial(m, exact=True)
     counts = {x: 0 for x in permutations(range(len(dice_solution)))}
@@ -117,6 +142,8 @@ def verify_go_first(dice_solution):
         counts[key] += 1
     for k in counts:
         print(k, check, counts[k])
+    print()
+    return counts  # np.all(np.array([check == counts[k] for k in counts]))
 
 
 # ============================================================================

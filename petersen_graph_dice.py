@@ -6,7 +6,6 @@ from itertools import combinations, permutations, product
 import pysat
 from pysat.pb import PBEnc
 from pysat.solvers import Minisat22, Glucose4, Minicard
-from pysat.solvers import *
 from clauses import build_converse_clauses, build_sorting_clauses
 from clauses import build_transitivity_clauses, build_symmetry_clauses
 from clauses import build_cardinality_clauses, build_cardinality_lits
@@ -65,7 +64,7 @@ for x in combinations(dice_names, 2):
     remaining_dice_names = [z for z in dice_names if z not in x]
     dice_perms_2v2.extend([(x,y) for y in combinations(remaining_dice_names, 2)])
 
-offset = 19
+offset = 18
 scores_2v2 = {
  (('A', 'B'), ('C', 'D')): d ** 4 // 2 + offset,
  (('A', 'C'), ('B', 'D')): d ** 4 // 2 + offset,
@@ -118,14 +117,11 @@ clauses += build_converse_clauses(d, var_dict_1v1, dice_names)
 clauses += build_sorting_clauses(d, var_dict_1v1, faces_1)
 clauses += build_transitivity_clauses(d, var_dict_1v1, faces_1)
 clauses += build_symmetry_clauses(d, var_dict_1v1, dice_names)
-# clauses += build_cardinality_clauses(d, var_dict_1v1, var_lists_1v1, scores_1v1, vpool)
 
 # ----------------------------------------------------------------------------
 
 clauses += build_max_doubling_clauses(var_dict_1v1, var_dict_2v2)
-# clauses += build_cardinality_clauses(d**2, var_dict_2v2, var_lists_2v2, scores_2v2, vpool, pb=PBEnc.atleast)
 
-# temp_dict = {x: var_dict_2v2[x] for x in scores_2v2}
 temp_lists = {x: var_lists_2v2[x] for x in scores_2v2}
 cardinality_lits = build_cardinality_lits(d**2, var_dict_2v2, temp_lists)
 
