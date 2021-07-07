@@ -13,8 +13,8 @@ from clauses import build_converse_clauses, build_sorting_clauses
 from clauses import build_transitivity_clauses, build_symmetry_clauses
 from clauses import build_cardinality_clauses, build_cardinality_lits
 
-from utils import sat_to_dice, sat_to_constraints, recover_values
-from utils import verify_go_first
+from utils import sat_to_dice, sat_to_constraints, dice_to_constraints, recover_values
+from utils import verify_go_first, word_to_dice, dice_to_word, permute_letters
 
 # ============================================================================
 # Find all possible pair compairson patterns
@@ -274,3 +274,174 @@ while atoms:
             atoms.pop(atoms.index(y))
             atoms.pop(atoms.index(y[::-1]))
             break
+
+
+# ============================================================================
+
+
+def permute_letters(string, permutation):
+    letters = sorted(list(set(string)))
+    subs = {s: letters[p] for s, p in zip(string, permutation)}
+    subs_string = "".join([subs[s] for s in string])
+    return subs_string
+
+
+dice_names = "abcd"
+word = dice_names + dice_names[::-1]
+# word1 = "abcddcba"
+perm1 = np.array([0, 1, 2, 3])
+word1 = permute_letters(word, perm1)
+# word2 = "dbaccabd"
+perm2 = np.array([3, 1, 0, 2])
+word2 = permute_letters(word, perm2)
+# word3 = "cbaddabc"
+perm3 = np.array([2, 1, 0, 3])
+word3 = permute_letters(word, perm3)
+word = word1 + word2 + word3
+dice = word_to_dice(word)
+
+
+dice_names = "abcde"
+word = dice_names + dice_names[::-1]
+coverage_dict = {perm: set() for perm in permutations(range(len(dice_names)))}
+for perm in coverage_dict.keys():
+    current_word = permute_letters(word, np.array(perm))
+    current_dice = word_to_dice(current_word)
+    counts = verify_go_first(current_dice, verbose=False)
+    nonzero_counts = set([x for x in counts if counts[x] > 0])
+    coverage_dict[perm] = nonzero_counts
+
+
+coverage_counter = {k: 0 for k in permutations(dice_names)}
+
+all_perms = set(permutations(dice_names))
+perms_list = []
+covered = set()
+ctr = 0
+while not all_perms.issubset(covered):
+    flag = True
+    for perm in coverage_dict.keys():
+        if coverage_dict[perm].isdisjoint(covered):
+            perms_list.append(perm)
+            covered.update(coverage_dict[perm])
+            flag = False
+            for x in coverage_dict[perm]:
+                coverage_counter[x] += 1
+            break
+    if flag:
+        print("No perms remaining")
+        break
+    print(ctr, perms_list)
+    ctr += 1
+
+dice_names = "abcde"
+m = len(dice_names)
+word = dice_names + dice_names[::-1]
+coverage_dict = {perm: set() for perm in permutations(range(len(dice_names)))}
+for perm in coverage_dict.keys():
+    current_word = permute_letters(word, np.array(perm))
+    current_dice = word_to_dice(current_word)
+    counts = verify_go_first(current_dice, verbose=False)
+    nonzero_counts = set([x for x in counts if counts[x] > 0])
+    coverage_dict[perm] = nonzero_counts
+
+coverage_counter = {k: 0 for k in permutations(dice_names)}
+all_perms = set(permutations(dice_names))
+perms_list = []
+flag = False
+ctr = 0
+while not flag:
+    ctr += 1
+    costs = dict()
+    for perm in coverage_dict.keys():
+        costs[perm] = sum([coverage_counter[x] for x in coverage_dict[perm]])
+    winning_perms = [perm for perm in costs if costs[perm] == min(costs.values())]
+    winning_perm = winning_perms[0]
+    perms_list.append(winning_perm)
+    for x in coverage_dict[winning_perm]:
+        coverage_counter[x] += 1
+    coverage_set = set(coverage_counter.values())
+    print(ctr, coverage_set)
+    if len(coverage_set) == 1:
+        flag = True
+
+
+big_word = "".join([permute_letters(word, perm) for perm in perms_list])
+big_worddrow = big_word + big_word[::-1]
+dice = word_to_dice(big_worddrow)
+
+# with open('four_of_five_go_first.pickle', 'wb') as handle:
+#     pickle.dump(dice, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+constraints = dice_to_constraints(dice, dtype=np.int)
+
+for x, y in permutations(dice_names, 2):
+    score = np.sum(constraints[(x, y)])
+    print((x, y), score)
+print()
+
+for x, y, z in permutations(dice_names, 3):
+    score = np.sum(constraints[(x, y)] @ constraints[(y, z)])
+    print((x, y, z), score)
+print()
+
+
+for w, x, y, z in permutations(dice_names, 4):
+    score = np.sum(constraints[(w, x)] @ constraints[(x, y)] @ constraints[(y, z)])
+    print((w, x, y, z), score)
+print()
+
+
+def score_perm4s(word):
+    dice = word_to_dice(word)
+    constraints = dice_to_constraints(dice)
+    scores = dict()
+    for w, x, y, z in permutations(dice_names, 4):
+        scores[(w, x, y, z)] = np.sum(
+            constraints[(w, x)] @ constraints[(x, y)] @ constraints[(y, z)]
+        )
+    return scores
+
+
+scores = score_perm4s(big_worddrow)
+for k, s in scores.items():
+    print(k, s)
+
+
+def score_perm5s(word):
+    dice = word_to_dice(word)
+    constraints = dice_to_constraints(dice)
+    scores = dict()
+    for v, w, x, y, z in permutations(dice_names, 5):
+        scores[(v, w, x, y, z)] = np.sum(
+            constraints[(v, w)]
+            @ constraints[(w, x)]
+            @ constraints[(x, y)]
+            @ constraints[(y, z)]
+        )
+    return scores
+
+
+scores = score_perm5s(big_worddrow)
+for k, s in scores.items():
+    print(k, s)
+
+
+variants2 = [
+    permute_letters(big_word, np.array(perm)) for perm in permutations(range(m))
+]
+
+
+all_perms = set(permutations(dice_names, 4))
+variant_triplets = list(combinations(variants2, 3))
+for v1, v2, v3 in tqdm(variant_triplets):
+    scores1 = score_perm4s(v1)
+    scores2 = score_perm4s(v2)
+    scores3 = score_perm4s(v3)
+    combined_scores = {
+        perm: scores1[perm] + scores2[perm] + scores3[perm] for perm in all_perms
+    }
+    score_set = set(combined_scores.values())
+    if len(score_set) == 1:
+        print("Hit!")
+        break

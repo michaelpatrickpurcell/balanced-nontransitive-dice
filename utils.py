@@ -83,6 +83,20 @@ def sat_to_dice(d, dice_names, sat_solution, compress=True):
     return dice_dict
 
 
+def dice_to_constraints(dice, dtype=np.int):
+    dice_names = list(dice.keys())
+    d = len(dice[dice_names[0]])
+    dice_pairs = list(permutations(dice_names, 2))
+    n = len(dice_pairs)
+    constraints = dict()
+    for x, y in dice_pairs:
+        foo = np.array(dice[x]).reshape(d, 1)
+        bar = np.array(dice[y]).reshape(1, d)
+        constraint = foo > bar
+        constraints[(x, y)] = constraint.astype(dtype)
+    return constraints
+
+
 def dice_to_word(dice_solution):
     dice_names = list(dice_solution.keys())
     m = len(dice_names)
@@ -105,6 +119,13 @@ def word_to_dice(word):
         else:
             dice_solution[w] = [i]
     return dice_solution
+
+
+def permute_letters(string, permutation):
+    letters = sorted(list(set(string)))
+    subs = {s: letters[p] for s, p in zip(string, permutation)}
+    subs_string = "".join([subs[s] for s in string])
+    return subs_string
 
 
 # ----------------------------------------------------------------------------
@@ -130,19 +151,19 @@ def verify_doubling_solution(
         print((x, y), check, doubled_scores_min[(x, y)])
 
 
-def verify_go_first(dice_solution):
+def verify_go_first(dice_solution, verbose=True):
     m = len(dice_solution)
-    keys = list(dice_solution.keys())
-    print(keys)
+    keys = np.array(sorted(list(dice_solution.keys())))
     d = len(dice_solution[keys[0]])
     check = d ** m // factorial(m, exact=True)
-    counts = {x: 0 for x in permutations(range(len(dice_solution)))}
-    for outcome in product(*dice_solution.values()):
-        key = tuple(np.argsort(outcome))
-        counts[key] += 1
-    for k in counts:
-        print(k, check, counts[k])
-    print()
+    counts = {x: 0 for x in permutations(keys)}
+    for outcome in product(*[dice_solution[k] for k in keys]):
+        perm = np.argsort(outcome)
+        counts[tuple(keys[perm])] += 1
+    if verbose:
+        for k in counts:
+            print(k, check, counts[k])
+        print()
     return counts  # np.all(np.array([check == counts[k] for k in counts]))
 
 
