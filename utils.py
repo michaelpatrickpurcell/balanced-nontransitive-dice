@@ -90,8 +90,8 @@ def dice_to_constraints(dice, dtype=np.int):
     n = len(dice_pairs)
     constraints = dict()
     for x, y in dice_pairs:
-        foo = np.array(dice[x]).reshape(d, 1)
-        bar = np.array(dice[y]).reshape(1, d)
+        foo = np.array(dice[x]).reshape(len(dice[x]), 1)
+        bar = np.array(dice[y]).reshape(1, len(dice[y]))
         constraint = foo > bar
         constraints[(x, y)] = constraint.astype(dtype)
     return constraints
@@ -123,7 +123,7 @@ def word_to_dice(word):
 
 def permute_letters(string, permutation):
     letters = sorted(list(set(string)))
-    subs = {s: letters[p] for s, p in zip(string, permutation)}
+    subs = {s: letters[p] for s, p in zip(letters, permutation)}
     subs_string = "".join([subs[s] for s in string])
     return subs_string
 
