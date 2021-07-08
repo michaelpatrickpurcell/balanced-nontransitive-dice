@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.special import factorial
+import random
 
 from itertools import combinations, permutations, product
 
@@ -17,40 +18,47 @@ from utils import sat_to_dice, sat_to_constraints, dice_to_constraints, recover_
 from utils import verify_go_first, word_to_dice, dice_to_word, permute_letters
 
 
-def score_perm3s(word):
+def score_perm3s(word, verbose=False):
     dice = word_to_dice(word)
     dice_names = list(dice.keys())
-    constraints = dice_to_constraints(dice)
+    constraints = dice_to_constraints(dice, dtype=np.float)
     scores = dict()
     for x, y, z in permutations(dice_names, 3):
-        scores[(x, y, z)] = np.sum(constraints[(x, y)] @ constraints[(y, z)])
+        score = np.sum(constraints[(x, y)] @ constraints[(y, z)])
+        scores[(x, y, z)] = score
+        if verbose:
+            print(score)
     return scores
 
 
-def score_perm4s(word):
+def score_perm4s(word, verbose=False):
     dice = word_to_dice(word)
     dice_names = list(dice.keys())
-    constraints = dice_to_constraints(dice)
+    constraints = dice_to_constraints(dice, dtype=np.float)
     scores = dict()
     for w, x, y, z in permutations(dice_names, 4):
-        scores[(w, x, y, z)] = np.sum(
-            constraints[(w, x)] @ constraints[(x, y)] @ constraints[(y, z)]
-        )
+        score = np.sum(constraints[(w, x)] @ constraints[(x, y)] @ constraints[(y, z)])
+        scores[(w, x, y, z)] = score
+        if verbose:
+            print(score)
     return scores
 
 
-def score_perm5s(word):
+def score_perm5s(word, verbose=False):
     dice = word_to_dice(word)
     dice_names = list(dice.keys())
-    constraints = dice_to_constraints(dice)
+    constraints = dice_to_constraints(dice, dtype=np.float)
     scores = dict()
     for v, w, x, y, z in permutations(dice_names, 5):
-        scores[(v, w, x, y, z)] = np.sum(
+        score = np.sum(
             constraints[(v, w)]
             @ constraints[(w, x)]
             @ constraints[(x, y)]
             @ constraints[(y, z)]
         )
+        scores[(v, w, x, y, z)] = score
+        if verbose:
+            print(score)
     return scores
 
 
@@ -350,6 +358,44 @@ while not flag:
     if len(coverage_set) == 1:
         flag = True
 
+
+# ============================================================================
+# This finds a set of:
+#   4d6 that satisfy 3/4 permutation fairness
+#   4d12 that satisfy 4/4 permutation fairness
+dice_names = "abcd"
+m = len(dice_names)
+word = dice_names + dice_names[::-1]
+coverage_dict = {perm: set() for perm in permutations(range(len(dice_names)))}
+for perm in coverage_dict.keys():
+    current_word = permute_letters(word, np.array(perm))
+    current_dice = word_to_dice(current_word)
+    nonzero_counts = set()
+    for x in permutations(dice_names, 4):
+        counts = verify_go_first({q: current_dice[q] for q in x}, verbose=False)
+        nonzero_counts.update(set([k for k in counts if counts[k] > 0]))
+    coverage_dict[perm] = nonzero_counts
+
+coverage_counter = {k: 0 for k in permutations(dice_names, 4)}
+all_perms = set(permutations(dice_names))
+perms_list = []
+flag = False
+while not flag:
+    costs = dict()
+    for perm in coverage_dict.keys():
+        cost = sum([coverage_counter[x] for x in coverage_dict[perm]])
+        costs[perm] = cost
+    winning_perms = [perm for perm in costs if costs[perm] == min(costs.values())]
+    winning_perm = winning_perms[0]
+    perms_list.append(winning_perm)
+    for x in coverage_dict[winning_perm]:
+        coverage_counter[x] += 1
+    coverage_set = set(coverage_counter.values())
+    print(coverage_set)
+    if len(coverage_set) == 1:
+        flag = True
+
+
 # ============================================================================
 # This finds a set of:
 #   5d2 that satisfy 2/5 permutation fairness
@@ -386,10 +432,11 @@ while not flag:
     if len(coverage_set) == 1:
         flag = True
 
+# ============================================================================
 
 big_word = "".join([permute_letters(word, perm) for perm in perms_list])
 big_worddrow = big_word + big_word[::-1]
-dice_word = big_word + big_word[::-1]
+dice_word = big_worddrow
 dice = word_to_dice(dice_word)
 
 # with open('four_of_five_go_first.pickle', 'wb') as handle:
@@ -413,6 +460,73 @@ for k, s in scores.items():
 scores = score_perm5s(dice_word)
 for k, s in scores.items():
     print(k, s)
+
+
+# ============================================================================
+# This finds a set of:
+# 5d2880 that are 5/5 permutation fair
+
+all_perms = list(permutations(range(m)))
+
+m = len(dice)
+huge_word = "".join(
+    [permute_letters(dice_word, np.array(p)) for p in permutations(range(m))]
+)
+
+huge_dice = word_to_dice(huge_word)
+
+constraints = dice_to_constraints(huge_dice, dtype=np.float)
+
+for x, y in permutations(dice_names, 2):
+    score = np.sum(constraints[(x, y)])
+    print((x, y), score)
+print()
+
+scores = score_perm3s(huge_word)
+for k, s in scores.items():
+    print(k, s)
+
+scores = score_perm4s(huge_word)
+for k, s in scores.items():
+    print(k, s)
+
+scores = score_perm5s(huge_word)
+for k, s in scores.items():
+    print(k, s)
+
+
+# ============================================================================
+# This finds a set of:
+dice_names = "abcde"
+m = len(dice_names)
+word = dice_word
+coverage_dict = {perm: set() for perm in permutations(range(len(dice_names)))}
+for perm in coverage_dict.keys():
+    current_word = permute_letters(word, np.array(perm))
+    counts = score_perm5s(current_word)
+    coverage_dict[perm] = counts
+
+coverage_counter = {k: 0.0 for k in permutations(dice_names)}
+all_perms = set(permutations(dice_names))
+perms_list = []
+flag = False
+ctr = 0
+while not flag:
+    ctr += 1
+    costs = dict()
+    for perm in coverage_dict.keys():
+        costs[perm] = sum(list(coverage_dict[perm].values()))
+    winning_perms = [perm for perm in costs if costs[perm] == min(costs.values())]
+    winning_perm = winning_perms[0]
+    perms_list.append(winning_perm)
+    for x in coverage_dict[winning_perm]:
+        coverage_counter[x] += coverage_dict[winning_perm][x]
+    coverage_set = set(coverage_counter.values())
+    print(ctr, coverage_set)
+    if len(coverage_set) == 1:
+        flag = True
+    if ctr == 600:
+        break
 
 
 dice_names = "abcde"
