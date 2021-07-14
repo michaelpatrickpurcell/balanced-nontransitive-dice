@@ -3,6 +3,8 @@ from scipy.special import factorial
 from itertools import permutations, product
 
 from pysat.solvers import Minisat22, Minicard
+from pysat.pb import PBEnc
+
 from clauses import build_clauses, build_max_min_clauses
 from clauses import build_permutation_clauses
 from clauses import build_cardinality_lits, build_exclusivity_lits
@@ -121,8 +123,12 @@ def word_to_dice(word):
     return dice_solution
 
 
-def permute_letters(string, permutation):
-    letters = sorted(list(set(string)))
+def permute_letters(string, permutation, relative=True):
+    letter_set = set(string)
+    if relative:
+        letters = string[: len(letter_set)]
+    else:
+        letters = sorted(list(set(string)))
     subs = {s: letters[p] for s, p in zip(letters, permutation)}
     subs_string = "".join([subs[s] for s in string])
     return subs_string
@@ -164,13 +170,13 @@ def verify_go_first(dice_solution, verbose=True):
         for k in counts:
             print(k, check, counts[k])
         print()
-    return counts  # np.all(np.array([check == counts[k] for k in counts]))
+    return counts
 
 
 # ============================================================================
 
 
-def sat_search(d, dice_names, scores, card_clauses=False):
+def sat_search(d, dice_names, scores, card_clauses=False, pb=PBEnc.equals):
     clauses, cardinality_lits = build_clauses(
         d, dice_names, scores, card_clauses=card_clauses
     )
@@ -181,9 +187,11 @@ def sat_search(d, dice_names, scores, card_clauses=False):
 
     if not card_clauses:
         for x, lits in cardinality_lits.items():
-            sat.add_atmost(lits, scores[x])
-            conv_lits = [-l for l in lits]
-            sat.add_atmost(conv_lits, d ** 2 - scores[x])
+            if pb in (PBEnc.equals, PBEnc.atmost):
+                sat.add_atmost(lits, scores[x])
+            if pb in (PBEnc.equals, PBEnc.atleast):
+                conv_lits = [-l for l in lits]
+                sat.add_atmost(conv_lits, d ** 2 - scores[x])
 
     is_solvable = sat.solve()
     if is_solvable:
@@ -219,8 +227,10 @@ def sat_search_max_min(d, dice_names, scores, max_scores, min_scores):
 # ----------------------------------------------------------------------------
 
 
-def sat_search_go_first(d, dice_names, scores_2, scores_m):
-    m = len(dice_names)
+def sat_search_go_first(d, dice_names, scores_2, scores_m, m=None):
+    if m == None:
+        m = len(dice_names)
+
     start_enum = 1
     dice_pairs = list(permutations(dice_names, 2))
     faces = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
@@ -235,7 +245,7 @@ def sat_search_go_first(d, dice_names, scores_2, scores_m):
 
     # ------------------------------------------------------------------------
 
-    dice_perms = list(permutations(dice_names))
+    dice_perms = list(permutations(dice_names, m))
     var_lists_m = {xs: list(product(*[faces[x] for x in xs])) for xs in dice_perms}
     variables_m = sum(var_lists_m.values(), [])
     var_dict_m = dict((v, k) for k, v in enumerate(variables_m, start_enum))
@@ -247,9 +257,9 @@ def sat_search_go_first(d, dice_names, scores_2, scores_m):
 
     # ------------------------------------------------------------------------
 
-    clauses_m = build_permutation_clauses(d, var_dict_2, var_dict_m, dice_names)
+    clauses_m = build_permutation_clauses(d, var_dict_2, var_dict_m, dice_names, m)
     cardinality_lits_m = build_cardinality_lits(d, var_dict_m, var_lists_m)
-    exclusivity_lits = build_exclusivity_lits(d, var_dict_m, dice_names)
+    exclusivity_lits = build_exclusivity_lits(d, var_dict_m, dice_names, m)
 
     # ------------------------------------------------------------------------
 

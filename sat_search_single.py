@@ -1,6 +1,7 @@
 # SAT strategy
 import numpy as np
 from itertools import permutations
+from pysat.pb import PBEnc
 
 from utils import verify_solution, sat_search
 
@@ -50,7 +51,7 @@ scores = {p: s for p, s in zip(dice_pairs, sum(S, []))}
 
 # ----------------------------------------------------------------------------
 
-dice_solution = sat_search(d, dice_names, scores)
+dice_solution = sat_search(d, dice_names, scores, pb=PBEnc.atleast)
 print(dice_solution)
 if dice_solution is not None:
     verify_solution(scores, dice_solution)
@@ -133,7 +134,15 @@ scores = {p: s for p, s in zip(dice_pairs, sum(S, []))}
 dice_solution = sat_search(d, dice_names, scores)
 print(dice_solution)
 if dice_solution is not None:
-    verify_solution(scores, dice_solution)
+    verify_solution(min_scores, dice_solution)
+
+# ----------------------------------------------------------------------------
+
+min_scores = {k: v for k, v in scores.items() if v == score}
+dice_solution = sat_search(d, dice_names, min_scores, pb=PBEnc.atleast)
+print(dice_solution)
+if dice_solution is not None:
+    verify_solution(min_scores, dice_solution)
 
 # =============================================================================
 # Four player Oskar dice variant
@@ -163,6 +172,14 @@ print(dice_solution)
 if dice_solution is not None:
     verify_solution(scores, dice_solution)
 
+# ----------------------------------------------------------------------------
+
+min_scores = {k: v for k, v in scores.items() if v == score}
+dice_solution = sat_search(d, dice_names, min_scores, pb=PBEnc.atleast)
+print(dice_solution)
+if dice_solution is not None:
+    verify_solution(min_scores, dice_solution)
+
 # =============================================================================
 # Five player Oskar dice variant
 # =============================================================================
@@ -189,3 +206,11 @@ dice_solution = sat_search(d, dice_names, scores)
 print(dice_solution)
 if dice_solution is not None:
     verify_solution(scores, dice_solution)
+
+# ----------------------------------------------------------------------------
+
+min_scores = {k: v for k, v in scores.items() if v == score}
+dice_solution = sat_search(d, dice_names, min_scores, pb=PBEnc.atleast)
+print(dice_solution)
+if dice_solution is not None:
+    verify_solution(min_scores, dice_solution)

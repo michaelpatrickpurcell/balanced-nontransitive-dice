@@ -1,8 +1,11 @@
 import numpy as np
-from scipy.special import factorial
+from scipy.special import factorial, comb
+from copy import copy
+from collections import Counter
+
 import random
 
-from itertools import combinations, permutations, product
+from itertools import combinations, permutations, product, combinations_with_replacement
 
 from tqdm import tqdm
 
@@ -328,13 +331,14 @@ while atoms:
 #   5d30 that satisfy 3/5 permutation fairness
 #   5d60 that satisfy 4/5 permutation fairness
 dice_names = "abcde"
+dice_names = "cbead"
+dice_names = "eadcb"
 m = len(dice_names)
 word = dice_names + dice_names[::-1]
 coverage_dict = {perm: set() for perm in permutations(range(len(dice_names)))}
 for perm in coverage_dict.keys():
     current_word = permute_letters(word, np.array(perm))
-    current_dice = word_to_dice(current_word)
-    counts = verify_go_first(current_dice, verbose=False)
+    counts = score_perm5s(current_word)
     nonzero_counts = set([x for x in counts if counts[x] > 0])
     coverage_dict[perm] = nonzero_counts
 
@@ -369,12 +373,10 @@ word = dice_names + dice_names[::-1]
 coverage_dict = {perm: set() for perm in permutations(range(len(dice_names)))}
 for perm in coverage_dict.keys():
     current_word = permute_letters(word, np.array(perm))
-    current_dice = word_to_dice(current_word)
-    nonzero_counts = set()
-    for x in permutations(dice_names, 4):
-        counts = verify_go_first({q: current_dice[q] for q in x}, verbose=False)
-        nonzero_counts.update(set([k for k in counts if counts[k] > 0]))
+    counts = score_perm4s(current_word)
+    nonzero_counts = set([x for x in counts if counts[x] > 0])
     coverage_dict[perm] = nonzero_counts
+
 
 coverage_counter = {k: 0 for k in permutations(dice_names, 4)}
 all_perms = set(permutations(dice_names))
@@ -401,18 +403,18 @@ while not flag:
 #   5d2 that satisfy 2/5 permutation fairness
 #   5d12 that satisfy 3/5 permutation fairness
 #   5d24 that satisfy 4/5 permutation fairness
+#   5d2880 that satisfy 5/5 permutation fairness
 dice_names = "abcde"
+# dice_names = "becad"
 m = len(dice_names)
 word = dice_names + dice_names[::-1]
 coverage_dict = {perm: set() for perm in permutations(range(len(dice_names)))}
 for perm in coverage_dict.keys():
     current_word = permute_letters(word, np.array(perm))
-    current_dice = word_to_dice(current_word)
-    nonzero_counts = set()
-    for x in permutations(dice_names, 3):
-        counts = verify_go_first({q: current_dice[q] for q in x}, verbose=False)
-        nonzero_counts.update(set([k for k in counts if counts[k] > 0]))
+    counts = score_perm3s(current_word)
+    nonzero_counts = set([x for x in counts if counts[x] > 0])
     coverage_dict[perm] = nonzero_counts
+
 
 coverage_counter = {k: 0 for k in permutations(dice_names, 3)}
 all_perms = set(permutations(dice_names))
@@ -461,17 +463,17 @@ scores = score_perm5s(dice_word)
 for k, s in scores.items():
     print(k, s)
 
-
-# ============================================================================
+# ----------------------------------------------------------------------------
 # This finds a set of:
 # 5d2880 that are 5/5 permutation fair
 
 all_perms = list(permutations(range(m)))
 
 m = len(dice)
-huge_word = "".join(
-    [permute_letters(dice_word, np.array(p)) for p in permutations(range(m))]
-)
+permuted_words = [
+    permute_letters(dice_word, np.array(p)) for p in permutations(range(m))
+]
+huge_word = "".join(permuted_words)
 
 huge_dice = word_to_dice(huge_word)
 
@@ -490,104 +492,184 @@ scores = score_perm4s(huge_word)
 for k, s in scores.items():
     print(k, s)
 
-scores = score_perm5s(huge_word)
+scores = score_perm5s(huge_word, verbose=True)
 for k, s in scores.items():
     print(k, s)
 
 
-# ============================================================================
+# ----------------------------------------------------------------------------
 # This finds a set of:
+#
 dice_names = "abcde"
 m = len(dice_names)
-word = dice_word
+
+all_perms = list(permutations(range(m)))
+permuted_scores = [score_perm5s(pw) for pw in permuted_words]
+
+# ============================================================================
+word = dice_names + dice_names[::-1]
 coverage_dict = {perm: set() for perm in permutations(range(len(dice_names)))}
 for perm in coverage_dict.keys():
     current_word = permute_letters(word, np.array(perm))
-    counts = score_perm5s(current_word)
-    coverage_dict[perm] = counts
-
-coverage_counter = {k: 0.0 for k in permutations(dice_names)}
-all_perms = set(permutations(dice_names))
-perms_list = []
-flag = False
-ctr = 0
-while not flag:
-    ctr += 1
-    costs = dict()
-    for perm in coverage_dict.keys():
-        costs[perm] = sum(list(coverage_dict[perm].values()))
-    winning_perms = [perm for perm in costs if costs[perm] == min(costs.values())]
-    winning_perm = winning_perms[0]
-    perms_list.append(winning_perm)
-    for x in coverage_dict[winning_perm]:
-        coverage_counter[x] += coverage_dict[winning_perm][x]
-    coverage_set = set(coverage_counter.values())
-    print(ctr, coverage_set)
-    if len(coverage_set) == 1:
-        flag = True
-    if ctr == 600:
-        break
+    counts = score_perm2s(current_word)
+    nonzero_counts = set([x for x in counts if counts[x] > 0])
+    coverage_dict[perm] = nonzero_counts
 
 
-dice_names = "abcde"
-variants = [
-    permute_letters(dice_word, np.array(perm)) for perm in permutations(range(m))
+# template = Counter([2] * 56 + [1] * 2 + [3] * 2)
+# template = Counter([2] * 52 + [1] * 4 + [3] * 4)
+# template = Counter([2] * 48 + [1] * 6 + [3] * 6)
+template = Counter([2] * 20 + [1] * 40)
+targets = list(permutations(dice_names, 2))
+perm_triplets = list(combinations(permutations(range(5)), 2))
+coverage_counters = {}
+for ps in tqdm(perm_triplets):
+    coverage_counter = {x: 0 for x in targets}
+    for p in ps:
+        for x in coverage_dict[p]:
+            coverage_counter[x] += 1
+
+    if Counter(list(coverage_counter.values())) == template:
+        coverage_counters[ps] = coverage_counter
+
+survivors = {}
+for x in tqdm(coverage_counters):
+    for y in coverage_counters:
+        candidate = copy(coverage_counters[x])
+        for t in targets:
+            candidate[t] += coverage_counters[y][t]
+        coverage_set = set(candidate.values())
+        if coverage_set == {4}:
+            survivors[x + y] = candidate
+
+
+big_words = [
+    "".join([permute_letters(word, perm) for perm in survivor])
+    for survivor in survivors
 ]
+big_worddrows = [big_word + big_word[::-1] for big_word in big_words]
+dice_words = big_worddrows
+dice = [word_to_dice(dice_word) for dice_word in dice_words]
 
 
-all_perms = set(permutations(dice_names))
-variant_quads = list(combinations(variants, 4))
-scores0 = score_perm5s(dice_word)
-for v1, v2, v3, v4 in tqdm(variant_quads):
-    scores1 = score_perm5s(v1)
-    scores2 = score_perm5s(v2)
-    scores3 = score_perm5s(v3)
-    scores4 = score_perm5s(v4)
-    combined_scores = {
-        perm: scores0[perm]
-        + scores1[perm]
-        + scores2[perm]
-        + scores3[perm]
-        + scores4[perm]
-        for perm in all_perms
-    }
-    score_set = set(combined_scores.values())
-    if len(score_set) == 1:
+scores = [score_perm5s(dice_word) for dice_word in tqdm(dice_words)]
+
+counter = Counter(scores[0].values())
+# Notice that there are really only 60 equivalent sets of vals_2_hits
+unique_scores = []
+indices = []
+for i, score in enumerate(scores):
+    if score not in unique_scores:
+        unique_scores.append(score)
+        indices.append(i)
+
+
+dice_words = [dice_words[i] for i in indices]
+
+dice_word = "".join(dice_words)
+
+scores = score_perm4s(dice_word, verbose=True)
+for k, s in scores.items():
+    print(k, s)
+
+scores = score_perm5s(dice_word)
+for k, s in scores.items():
+    print(k, s)
+
+
+for us in combinations_with_replacement(unique_scores, 5):
+    counts = {k: sum([u[k] for u in us]) for k in us[0]}
+    count_set = set(list(counts.values()))
+    if len(count_set) == 1:
         print("Hit!")
         break
 
 
-# go_first_dice = {'a': [1, 8, 11, 14, 19, 22, 27, 30, 35, 38, 41, 48],
-# 'b': [2, 7, 10, 15, 18, 23, 26, 31, 34, 39, 42, 47],
-# 'c': [3, 6, 12, 13, 17, 24, 25, 32, 36, 37, 43, 46],
-# 'd': [4, 5, 9,  16, 20, 21, 28, 29, 33, 40, 44, 45]}
-#
-# gfd = dice_to_word(go_first_dice)[0]
-#
-# e = 'e'*10
-# pre_test = e + gfd + e + gfd + e + gfd + e + gfd + e + gfd + e
-#
-# rot_perms = [(0,1,2,3,4), (1,2,3,4,0), (2,3,4,0,1), (3,4,0,1,2), (4,0,1,2,3)]
-# test = ''.join([permute_letters(pre_test, np.array(perm)) for perm in rot_perms])
-# test = test + test[::-1]
-#
-# test_dice = word_to_dice(test)
-# constraints = dice_to_constraints(test_dice, dtype=np.int)
-#
-# dice_names = "abcde"
-# for x, y in permutations(dice_names, 2):
-#     score = np.sum(constraints[(x, y)])
-#     print((x, y), score)
-# print()
-#
-# scores = score_perm3s(test)
-# for k, s in scores.items():
-#     print(k, s)
-#
-# scores = score_perm4s(test)
-# for k, s in scores.items():
-#     print(k, s)
-#
-# scores = score_perm5s(test)
-# for k, s in scores.items():
-#     print(k, s)
+all_values = set(scores[0].values())
+target = 5 * (24 ** 5 / 120)
+value_sets = []
+for vs in combinations_with_replacement(all_values, 5):
+    if sum(vs) == target:
+        value_sets.append(set(vs))
+
+
+valid_pairs = set()
+for i in tqdm(range(len(dice_words))):
+    for j in tqdm(range(len(dice_words))):
+        for x in scores[j]:
+            vp = set([scores[i][x], scores[j][x]])
+            is_valid = False
+            for vs in value_sets:
+                if vp.issubset(vs):
+                    is_valid = True
+                    break
+            if not is_valid:
+                break
+        if is_valid:
+            valid_pairs.add((i, j))
+
+valid_triplets = set()
+for i in tqdm(valid_pairs):
+    for j in range(len(dice_words)):
+        for x in scores[j]:
+            vp = set([scores[i[0]][x], scores[i[1]][x], scores[j][x]])
+            is_valid = False
+            for vs in value_sets:
+                if vp.issubset(vs):
+                    is_valid = True
+                    break
+            if not is_valid:
+                break
+        if is_valid:
+            valid_triplets.add((i[0], i[1], j))
+
+pruned_valid_triplets = set()
+for x in tqdm(valid_triplets):
+    if (x[0], x[2], x[1]) not in pruned_valid_triplets:
+        pruned_valid_triplets.add(x)
+
+
+valid_quads = set()
+for i in tqdm(pruned_valid_triplets):
+    for j in range(len(scores)):
+        for x in scores[j]:
+            vp = set([scores[i[0]][x], scores[i[1]][x], scores[i[2]][x], scores[j][x]])
+            is_valid = False
+            for vs in value_sets:
+                if vp.issubset(vs):
+                    is_valid = True
+                    break
+            if not is_valid:
+                break
+        if is_valid:
+            valid_quads.add((i[0], i[1], i[2], j))
+
+
+valid_quints = set()
+for i in tqdm(valid_quads):
+    for j in range(len(scores)):
+        for x in scores[j]:
+            vp = set(
+                [
+                    scores[i[0]][x],
+                    scores[i[1]][x],
+                    scores[i[2]][x],
+                    scores[i[3]][x],
+                    scores[j][x],
+                ]
+            )
+            is_valid = False
+            for vs in value_sets:
+                if vp.issubset(vs):
+                    is_valid = True
+                    break
+            if not is_valid:
+                break
+        if is_valid:
+            valid_quints.add((i[0], i[1], i[2], i[3], j))
+
+
+for qs in valid_quints:
+    check = [sum([scores[q][x] for q in qs]) for x in scores[0]]
+    if len(set(check)) < 30:
+        print(len(set(check)))

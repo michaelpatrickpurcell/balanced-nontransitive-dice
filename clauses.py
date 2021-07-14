@@ -7,7 +7,9 @@ from itertools import product, permutations
 # ============================================================================
 
 
-def build_clauses(d, dice_names, scores, vpool=None, card_clauses=False):
+def build_clauses(
+    d, dice_names, scores, vpool=None, card_clauses=False, pb=PBEnc.equals
+):
     """
     Build the clauses that describe the SAT problem.
     """
@@ -24,15 +26,15 @@ def build_clauses(d, dice_names, scores, vpool=None, card_clauses=False):
     clauses += build_sorting_clauses(d, var_dict, faces)
     clauses += build_transitivity_clauses(d, var_dict, faces)
     clauses += build_symmetry_clauses(d, var_dict, dice_names)
-    # clauses += build_structure_clauses(d, var_dict, var_lists, scores)
+    clauses += build_structure_clauses(d, var_dict, var_lists, scores)
 
     if card_clauses:
         if vpool == None:
             vpool = pysat.formula.IDPool(start_from=n * d ** 2 + 1)
-        clauses += build_cardinality_clauses(d, var_dict, var_lists, scores, vpool)
+        clauses += build_cardinality_clauses(d, var_dict, var_lists, scores, vpool, pb)
         cardinality_lits = dict()
     else:
-        cardinality_lits = build_cardinality_lits(d, var_dict, var_lists)
+        cardinality_lits = build_cardinality_lits(d, var_dict, var_lists, scores)
 
     return clauses, cardinality_lits
 
@@ -129,7 +131,9 @@ def build_symmetry_clauses(d, var_dict, dice_names):
 
 def build_structure_clauses(d, var_dict, var_lists, scores):
     structure_clauses = []
-    for x, var_list in var_lists.items():
+    # for x, var_list in var_lists.items():
+    for x in scores:
+        var_list = var_lists[x]
         score = scores[x]
         for i, j in product(range(1, d + 1), repeat=2):
             v = var_dict[(x[0] + "%i" % i, x[1] + "%i" % j)]
@@ -158,9 +162,11 @@ def build_cardinality_clauses(d, var_dict, var_lists, scores, vpool, pb=PBEnc.eq
     return cardinality_clauses
 
 
-def build_cardinality_lits(d, var_dict, var_lists):
+def build_cardinality_lits(d, var_dict, var_lists, scores):
     cardinality_lits = dict()
-    for dice_pair, var_list in var_lists.items():
+    # for dice_pair, var_list in var_lists.items():
+    for dice_pair in scores:
+        var_list = var_lists[dice_pair]
         lits = [var_dict[v] for v in var_list]
         cardinality_lits[dice_pair] = lits
     return cardinality_lits
@@ -261,8 +267,9 @@ def build_doubling_clauses(d, var_dict_1v1, var_dict_2v2, dice_names, pool_func)
 # ============================================================================
 # Utilities for problems that involve m-way dice comparisons
 # ============================================================================
-def build_permutation_clauses(d, var_dict_2, var_dict_m, dice_names):
-    m = len(dice_names)
+def build_permutation_clauses(d, var_dict_2, var_dict_m, dice_names, m=None):
+    if m == None:
+        m = len(dice_names)
     faces = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
     permutation_clauses = []
     for xs in permutations(dice_names):
@@ -278,23 +285,25 @@ def build_permutation_clauses(d, var_dict_2, var_dict_m, dice_names):
     return permutation_clauses
 
 
-def build_winner_clauses(d, var_dict_2, var_dict_m, dice_names, dice_perms):
-    m = len(dice_names)
+def build_winner_clauses(d, var_dict_2, var_dict_m, dice_names, dice_perms, m=None):
+    if m == None:
+        m = len(dice_names)
     faces = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
-    permutation_clauses = []
+    winner_clauses = []
     for xs in dice_perms:
         for iis in product(range(d), repeat=m):
             x, i = xs[0], iis[0]
             z = list(zip(xs[1:], iis[1:]))
             vs = [var_dict_2[(faces[x][i], faces[y][j])] for y, j in z]
             w = var_dict_m[tuple([faces[x][i]] + [faces[y][j] for y, j in z])]
-            permutation_clauses.append([-v for v in vs] + [w])
-            permutation_clauses.extend([[-w, v] for v in vs])
+            winner_clauses.append([-v for v in vs] + [w])
+            winner_clauses.extend([[-w, v] for v in vs])
     return permutation_clauses
 
 
-def build_exclusivity_clauses(d, var_dict_m, dice_names, vpool):
-    m = len(dice_names)
+def build_exclusivity_clauses(d, var_dict_m, dice_names, vpool, m=None):
+    if m == None:
+        m = len(dice_names)
     faces = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
     exclusivity_clauses = []
     for x in product(range(d), repeat=m):
@@ -305,8 +314,9 @@ def build_exclusivity_clauses(d, var_dict_m, dice_names, vpool):
     return exclusivity_clauses
 
 
-def build_exclusivity_lits(d, var_dict_m, dice_names):
-    m = len(dice_names)
+def build_exclusivity_lits(d, var_dict_m, dice_names, m=None):
+    if m == None:
+        m = len(dice_names)
     faces = {x: ["%s%i" % (x, i) for i in range(1, d + 1)] for x in dice_names}
     exclusivity_lits = dict()
     for x in product(range(d), repeat=m):
