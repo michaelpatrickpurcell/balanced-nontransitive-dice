@@ -126,7 +126,10 @@ def word_to_dice(word):
 def permute_letters(string, permutation, relative=True):
     letter_set = set(string)
     if relative:
-        letters = string[: len(letter_set)]
+        pairs = [(string.index(letter), letter) for letter in letter_set]
+        sorted_pairs = sorted(pairs)
+        letters = "".join(l for i, l in sorted_pairs)
+        # letters = string[: len(letter_set)]
     else:
         letters = sorted(list(set(string)))
     subs = {s: letters[p] for s, p in zip(letters, permutation)}
