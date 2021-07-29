@@ -179,16 +179,29 @@ def verify_go_first(dice_solution, verbose=True):
 # ============================================================================
 
 
-def sat_search(d, dice_names, scores, card_clauses=False, pb=PBEnc.equals):
+def sat_search(
+    d,
+    dice_names,
+    scores,
+    cardinality_clauses=False,
+    symmetry_clauses=True,
+    structure_clauses=True,
+    pb=PBEnc.equals,
+):
     clauses, cardinality_lits = build_clauses(
-        d, dice_names, scores, card_clauses=card_clauses
+        d,
+        dice_names,
+        scores,
+        card_clauses=cardinality_clauses,
+        symmetry_clauses=symmetry_clauses,
+        structure_clauses=structure_clauses,
     )
 
     sat = Minicard()
     for clause in clauses:
         sat.add_clause(clause)
 
-    if not card_clauses:
+    if not cardinality_clauses:
         for x, lits in cardinality_lits.items():
             if pb in (PBEnc.equals, PBEnc.atmost):
                 sat.add_atmost(lits, scores[x])
@@ -199,7 +212,7 @@ def sat_search(d, dice_names, scores, card_clauses=False, pb=PBEnc.equals):
     is_solvable = sat.solve()
     if is_solvable:
         sat_solution = np.array(sat.get_model())
-        dice_solution = sat_to_dice(d, dice_names, sat_solution)
+        dice_solution = sat_to_dice(d, dice_names, sat_solution, compress=False)
     else:
         dice_solution = None
 

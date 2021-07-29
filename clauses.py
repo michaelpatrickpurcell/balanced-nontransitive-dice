@@ -8,7 +8,14 @@ from itertools import product, permutations
 
 
 def build_clauses(
-    d, dice_names, scores, vpool=None, card_clauses=False, pb=PBEnc.equals
+    d,
+    dice_names,
+    scores,
+    vpool=None,
+    card_clauses=False,
+    symmetry_clauses=True,
+    structure_clauses=True,
+    pb=PBEnc.equals,
 ):
     """
     Build the clauses that describe the SAT problem.
@@ -25,8 +32,10 @@ def build_clauses(
     clauses += build_converse_clauses(d, var_dict, dice_names)
     clauses += build_sorting_clauses(d, var_dict, faces)
     clauses += build_transitivity_clauses(d, var_dict, faces)
-    clauses += build_symmetry_clauses(d, var_dict, dice_names)
-    clauses += build_structure_clauses(d, var_dict, var_lists, scores)
+    if symmetry_clauses:
+        clauses += build_symmetry_clauses(d, var_dict, dice_names)
+    if structure_clauses:
+        clauses += build_structure_clauses(d, var_dict, var_lists, scores)
 
     if card_clauses:
         if vpool == None:
