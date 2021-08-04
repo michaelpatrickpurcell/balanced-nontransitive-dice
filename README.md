@@ -74,6 +74,7 @@ Contrast this set with [Efron's Dice](https://en.wikipedia.org/wiki/Intransitive
 
 ## Interesting Five-Dice Sets
 The most interesting set of five dice that I've found is:
+
 |       | i   | ii  | iii | iv  | v   | vi  |
 | :-:   | --: | --: | --: | --: | --: | --: |
 | **A** | 0   | 0   | 9   | 9   | 9   | 9   |
@@ -109,6 +110,7 @@ We can represent these relationships in a diagram with two different edge weight
 
 ## Interesting Six-Dice Sets
 The most interesting set of six dice that I've found is:
+
 |       | i   | ii  | iii | iv  | v   | vi  |
 | :-:   | --: | --: | --: | --: | --: | --: |
 | **A** | 0   | 2   | 12  | 12  | 14  | 22  |
@@ -158,3 +160,19 @@ such that P{W > X} = P{W > Y} = P{W > Z} = 13/25.
 | **Q** | 16  | 28  | 49  | 62  | 80  |
 | **R** | 13  | 25  | 46  | 64  | 87  |
 | **S** | 12  | 32  | 42  | 67  | 82  |
+
+## Petersen Graph Dice
+I found an interesting set of five dice that has some interesting properties when comparing the maximum of each of two disjoint pairs of the dice.
+
+
+|       | i   | ii  | iii | iv  | v   | vi  |
+| :-:   | --: | --: | --: | --: | --: | --: |
+| **A** | 0   | 5   | 18  | 19  | 20  | 26  |
+| **B** | 12  | 14  | 15  | 16  | 17  | 27  |
+| **C** | 9   | 10  | 11  | 13  | 21  | 29  |
+| **D** | 1   | 4   | 6   | 7   | 25  | 28  |
+| **E** | 2   | 3   | 8   | 22  | 23  | 24  |
+
+We can represent these relationships with the following diagram:
+
+![Petersen Dice Diagram](./Diagrams/petersen_dice_diagram.png)

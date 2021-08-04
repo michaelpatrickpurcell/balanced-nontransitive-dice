@@ -123,7 +123,7 @@ clauses += build_symmetry_clauses(d, var_dict_1v1, dice_names)
 clauses += build_max_doubling_clauses(var_dict_1v1, var_dict_2v2)
 
 temp_lists = {x: var_lists_2v2[x] for x in scores_2v2}
-cardinality_lits = build_cardinality_lits(d**2, var_dict_2v2, temp_lists)
+cardinality_lits = build_cardinality_lits(d**2, var_dict_2v2, temp_lists, scores_2v2)
 
 # ----------------------------------------------------------------------------
 

@@ -73,7 +73,7 @@ def sat_to_constraints(d, dice_names, sat_solution, compress=True):
     return constraints
 
 
-def sat_to_dice(d, dice_names, sat_solution, compress=True):
+def sat_to_dice(d, dice_names, sat_solution, compress=False):
     constraints = sat_to_constraints(d, dice_names, sat_solution)
 
     natural_faces = recover_values(d, dice_names, constraints)
@@ -179,7 +179,7 @@ def verify_go_first(dice_solution, verbose=True):
 # ============================================================================
 
 
-def sat_search(
+def build_sat(
     d,
     dice_names,
     scores,
@@ -209,14 +209,76 @@ def sat_search(
                 conv_lits = [-l for l in lits]
                 sat.add_atmost(conv_lits, d ** 2 - scores[x])
 
+    return sat
+
+
+def sat_search(
+    d,
+    dice_names,
+    scores,
+    cardinality_clauses=False,
+    symmetry_clauses=True,
+    structure_clauses=True,
+    pb=PBEnc.equals,
+    solution_type="dice_solution",
+):
+    sat = build_sat(
+        d=d,
+        dice_names=dice_names,
+        scores=scores,
+        cardinality_clauses=cardinality_clauses,
+        symmetry_clauses=symmetry_clauses,
+        structure_clauses=structure_clauses,
+        pb=pb,
+    )
+
     is_solvable = sat.solve()
     if is_solvable:
         sat_solution = np.array(sat.get_model())
         dice_solution = sat_to_dice(d, dice_names, sat_solution, compress=False)
     else:
+        sat_solution = None
         dice_solution = None
 
-    return dice_solution
+    if solution_type == "sat_solution":
+        return sat_solution
+    elif solution_type == "dice_solution":
+        return dice_solution
+
+
+# ----------------------------------------------------------------------------
+
+
+def sat_exhaust(
+    d,
+    dice_names,
+    scores,
+    cardinality_clauses=False,
+    symmetry_clauses=True,
+    structure_clauses=True,
+    pb=PBEnc.equals,
+    solution_type="sat_solution",
+):
+    sat = build_sat(
+        d=d,
+        dice_names=dice_names,
+        scores=scores,
+        cardinality_clauses=cardinality_clauses,
+        symmetry_clauses=symmetry_clauses,
+        structure_clauses=structure_clauses,
+        pb=pb,
+    )
+
+    dice_pairs = list(permutations(dice_names, 2))
+    n = len(dice_pairs)
+
+    solutions = sat.enum_models()
+
+    if solution_type == "sat_solution":
+        return [np.array(s) for s in solutions]
+    elif solution_type == "dice_solution":
+        dice_solutions = [sat_to_dice(d, dice_names, np.array(s)) for s in solutions]
+        return dice_solutions
 
 
 # ----------------------------------------------------------------------------
