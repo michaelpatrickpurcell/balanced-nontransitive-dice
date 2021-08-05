@@ -1,4 +1,5 @@
 import numpy as np
+
 from itertools import permutations
 from pysat.pb import PBEnc
 
@@ -28,8 +29,6 @@ n = len(dice_pairs)
 
 d = args.number_of_sides
 cardinality_clauses = args.cardinality_clauses
-
-print(cardinality_clauses)
 
 # ----------------------------------------------------------------------------
 
