@@ -146,3 +146,4 @@ else:
     dice_solution = None
 
 print(dice_solution)
+verify_doubling_solution(scores_2v2, dice_solution)
