@@ -8,7 +8,7 @@ from utils import sat_to_dice
 m = 19
 dice_names = ["D%i" % i for i in range(m)]
 
-d = 5
+d = 9
 cardinality_clauses = False
 
 dice_pairs = list(permutations(dice_names, 2))
@@ -35,7 +35,7 @@ sat_1 = build_sat(
     scores_1,
     cardinality_clauses=cardinality_clauses,
     symmetry_clauses=False,
-    pb=PBEnc.atleast,
+    pb=PBEnc.equals,
 )
 
 mask = [1 if (i + 1) in mask_index[:8] else 0 for i in range(m - 1)]
@@ -48,7 +48,7 @@ sat_2 = build_sat(
     scores_2,
     cardinality_clauses=cardinality_clauses,
     symmetry_clauses=False,
-    pb=PBEnc.atleast,
+    pb=PBEnc.equals,
 )
 
 mask = [1 if (i + 1) in mask_index[:9] else 0 for i in range(m - 1)]
@@ -61,19 +61,19 @@ sat_3 = build_sat(
     scores_3,
     cardinality_clauses=cardinality_clauses,
     symmetry_clauses=False,
-    pb=PBEnc.atleast,
+    pb=PBEnc.equals,
 )
 
 flag = False
 dice_solution = None
 for i, partial_solution_1 in enumerate(sat_1.enum_models()):
-    print(i)
+    print("i", i)
     assumptions_1 = []
     for x in scores_1:
         for y in var_lists[x]:
             assumptions_1.append(int(partial_solution_1[var_dict[y] - 1]))
     for j, partial_solution_2 in enumerate(sat_2.enum_models(assumptions_1)):
-        print(j)
+        print("j", j)
         assumptions_2 = []
         for x in scores_2:
             for y in var_lists[x]:

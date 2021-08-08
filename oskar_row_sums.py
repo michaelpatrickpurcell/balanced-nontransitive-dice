@@ -6,10 +6,10 @@ from pysat.pb import PBEnc
 from utils import verify_solution, sat_search, build_sat, sat_to_dice
 
 
-m = 19
+m = 67
 dice_names = ["D%i" % i for i in range(m)]
 
-d = 5
+d = 3
 cardinality_clauses = False
 
 dice_pairs = list(permutations(dice_names, 2))
