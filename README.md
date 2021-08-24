@@ -134,7 +134,7 @@ If we suppress edges between dice that are evenly matched, then we can represent
 
 ![Six Dice Diagram](./Diagrams/six_dice_diagram.png)
 
-## Interesting Nineteen-Dice Sets (?!?)
+## Interesting Nineteen-Dice Sets
 I found an interesting set of nineteen five-sided dice with the property that
 for any set of three of the dice (X, Y, Z) there is a fourth die W
 such that P{W > X} = P{W > Y} = P{W > Z} = 13/25.
