@@ -7,45 +7,18 @@ from utils import sat_search, sat_exhaust
 from utils import verify_solution, sat_to_dice
 
 # =============================================================================
-# Three-dice sets
-# =============================================================================
-dice_names = "ABC"
-dice_pairs = list(permutations(dice_names, 2))
-
-n = len(dice_names)
-d = 13  # 34
-
-# ----------------------------------------------------------------------------
-
-w = 104  # 714
-temp = [w, d ** 2 - w]
-S = [[temp[(j - i) % (n - 1)] for j in range(n - 1)] for i in range(n)]
-scores = {p: s for p, s in zip(dice_pairs, sum(S, []))}
-
-# ----------------------------------------------------------------------------
-
-sat_solution = sat_search(d, dice_names, scores)
-dice_solution = sat_to_dice(d, dice_names, sat_solution)
-for x in dice_solution:
-    print("%s: " % x, dice_solution[x])
-
-if dice_solution is not None:
-    print(verify_solution(scores, dice_solution))
-print()
-
-# =============================================================================
-# Four dice sets
+# Simple Cyclic Dice
 # =============================================================================
 dice_names = "ABCD"
 dice_pairs = list(permutations(dice_names, 2))
 
 n = len(dice_names)
-d = 4  # 6
+d = 6
 
 # ----------------------------------------------------------------------------
 
-w1 = 10  # 22
-w2 = d ** 2 // 2  # 18
+w1 = 22
+w2 = d ** 2 // 2
 temp = [w1, w2, d ** 2 - w1]
 S = [[temp[(j - i) % (n - 1)] for j in range(n - 1)] for i in range(n)]
 scores = {p: s for p, s in zip(dice_pairs, sum(S, []))}
@@ -62,7 +35,7 @@ if dice_solution is not None:
 print()
 
 # =============================================================================
-# Five dice sets
+# Rotationally Symmetric Dice
 # =============================================================================
 dice_names = "ABCDE"
 dice_pairs = list(permutations(dice_names, 2))
@@ -89,8 +62,7 @@ if dice_solution is not None:
 print()
 
 # =============================================================================
-# Six dice sets
-# =============================================================================
+
 dice_names = "ABCDEF"
 dice_pairs = list(permutations(dice_names, 2))
 
@@ -118,7 +90,7 @@ if dice_solution is not None:
 print()
 
 # =============================================================================
-# Seven dice sets
+# Paley Dice
 # =============================================================================
 dice_names = "ABCDEFG"
 dice_pairs = list(permutations(dice_names, 2))
@@ -146,8 +118,7 @@ for sat_solution in sat_solutions:
     print()
 
 # =============================================================================
-# Four player Oskar dice variant
-# =============================================================================
+
 dice_names = "ABCDEFGHIJKLMNOPQRS"
 dice_pairs = list(permutations(dice_names, 2))
 
