@@ -2,6 +2,7 @@ import numpy as np
 
 from itertools import permutations, product
 from pysat.solvers import Minicard
+from pysat.pb import PBEnc
 
 from constraints import build_constraints
 
@@ -9,11 +10,11 @@ from constraints import build_constraints
 # ============================================================================
 
 
-def sat_search(d, dice_names, scores):
+def sat_search(d, dice_names, scores, pb_type=PBEnc.equals):
     """
     Find a solution to a nonstandard dice problem
     """
-    sat = build_sat(d=d, dice_names=dice_names, scores=scores)
+    sat = build_sat(d=d, dice_names=dice_names, scores=scores, pb_type=pb_type)
 
     is_solvable = sat.solve()
     if is_solvable:
@@ -24,7 +25,7 @@ def sat_search(d, dice_names, scores):
     return sat_solution
 
 
-def build_sat(d, dice_names, scores, symmetry_clauses=True):
+def build_sat(d, dice_names, scores, pb_type):
     """
     Build a SAT solver to solve a nonstandard dice problem
     """
@@ -35,23 +36,13 @@ def build_sat(d, dice_names, scores, symmetry_clauses=True):
         sat.add_clause(clause)
 
     for x, ls in lits:
-        sat.add_atmost(ls, scores[x])
-        conv_ls = [-l for l in ls]
-        sat.add_atmost(conv_ls, d ** 2 - scores[x])
+        if pb_type in (PBEnc.equals, PBEnc.atmost):
+            sat.add_atmost(ls, scores[x])
+        if pb_type in (PBEnc.equals, PBEnc.atleast):
+            conv_ls = [-l for l in ls]
+            sat.add_atmost(conv_ls, d ** 2 - scores[x])
 
     return sat
-
-
-# ----------------------------------------------------------------------------
-
-
-def sat_exhaust(d, dice_names, scores):
-    """
-    Find all solutions to a nonstandard dice problem
-    """
-    sat = build_sat(d=d, dice_names=dice_names, scores=scores)
-    solutions = sat.enum_models()
-    return [np.array(s) for s in solutions]
 
 
 # ============================================================================
